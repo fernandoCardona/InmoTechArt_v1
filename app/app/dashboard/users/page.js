@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { decrypt } from '../../../lib/auth';
 import UsersClient from './UsersClient';
+import { LuUsers } from 'react-icons/lu';
 
 export default async function UsersPage() {
   const cookieStore = await cookies();
@@ -22,7 +23,9 @@ export default async function UsersPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold font-dm-sans text-white">Gestión de Usuarios</h1>
+          <h1 className="text-2xl font-bold font-dm-sans text-slate-900 dark:text-white flex items-center gap-3">
+            <LuUsers size={28} className="text-amber-500" /> Gestión de Usuarios
+          </h1>
           <p className="text-slate-400 text-sm mt-1">
             Administración centralizada de identidades y accesos
           </p>
