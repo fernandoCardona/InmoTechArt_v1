@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShieldCheck, ShieldAlert, MonitorSmartphone, Activity } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, MonitorSmartphone, Activity, Search } from 'lucide-react';
+import { getAllSearchHistory } from '../../../lib/search-actions';
 
 export default function AdminClient() {
   const [data, setData] = useState({ devices: [], logs: [] });
+  const [globalHistory, setGlobalHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -15,6 +17,12 @@ export default function AdminClient() {
       if (!res.ok) throw new Error('No tienes permisos de SuperAdmin.');
       const json = await res.json();
       setData(json);
+
+      // Traer el historial global de búsquedas
+      const historyRes = await getAllSearchHistory();
+      if (historyRes.success) {
+        setGlobalHistory(historyRes.data);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -149,6 +157,40 @@ export default function AdminClient() {
         </div>
       </div>
       
+      {/* Fila Inferior: Historial Global de Búsquedas */}
+      <div className="mt-8 space-y-4 col-span-1 lg:col-span-2">
+        <h2 className="text-xl font-semibold text-slate-200 flex items-center gap-2">
+          <Search size={20} className="text-emerald-400" /> Historial Global de Búsquedas
+        </h2>
+
+        <div className="rounded-2xl bg-white/5 dark:bg-slate-900/50 backdrop-blur-xl border border-white/10 dark:border-slate-800 shadow-xl overflow-hidden">
+          <div className="divide-y divide-slate-800/50 max-h-[400px] overflow-y-auto">
+            {globalHistory.length === 0 ? (
+              <div className="p-6 text-slate-500 text-center">No hay búsquedas registradas en el sistema.</div>
+            ) : globalHistory.map(item => (
+              <div key={item.id} className="p-4 hover:bg-slate-800/30 transition-colors flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400">
+                    <Search size={14} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-emerald-400 font-medium truncate">
+                      "{item.searchQuery}"
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Realizada por: <span className="text-slate-300">{item.userName} ({item.userEmail})</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="text-[10px] text-slate-500 whitespace-nowrap bg-slate-800 px-2 py-1 rounded">
+                  {new Date(item.createdAt).toLocaleString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

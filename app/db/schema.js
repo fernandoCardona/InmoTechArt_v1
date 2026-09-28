@@ -61,6 +61,13 @@ export const accessAuditLogs = appCore.table('access_audit_logs', {
 // ASSETS SCHEMA
 // ============================================================
 
+export const searchHistory = appCore.table('search_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  searchQuery: varchar('search_query', { length: 500 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const providers = assetsSchema.table('providers', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: varchar('name', { length: 150 }).unique().notNull(),

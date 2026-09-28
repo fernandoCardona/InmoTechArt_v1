@@ -119,6 +119,16 @@ CREATE TABLE app_core.access_audit_logs (
 );
 
 -- ----------------------------------------------------------
+-- TABLA 4.5: HISTORIAL DE BÚSQUEDAS (app_core)
+-- ----------------------------------------------------------
+CREATE TABLE app_core.search_history (
+    id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id       UUID         NOT NULL REFERENCES app_core.users(id) ON DELETE CASCADE,
+    search_query  VARCHAR(500) NOT NULL,
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+-- ----------------------------------------------------------
 -- TABLA 5: PROVEEDORES (assets)
 -- ----------------------------------------------------------
 CREATE TABLE assets.providers (
@@ -209,6 +219,7 @@ CREATE INDEX idx_prop_cadastral         ON assets.properties (cadastral_referenc
 CREATE INDEX idx_prop_provider_code     ON assets.properties (provider_id, asset_code_provider) WHERE asset_code_provider IS NOT NULL;
 CREATE INDEX idx_prop_active_main_filter ON assets.properties (is_active, province, municipality, price_pvp);
 CREATE INDEX idx_batches_provider_status ON assets.import_batches (provider_id, status);
+CREATE INDEX idx_search_history_user     ON app_core.search_history (user_id, created_at DESC);
 
 -- ============================================================
 -- 6. TRIGGERS DE updated_at

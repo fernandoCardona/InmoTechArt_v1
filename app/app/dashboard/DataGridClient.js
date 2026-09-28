@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { flexRender, createCoreRowModel, useTable } from '@tanstack/react-table';
-import { Search, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, MoreHorizontal, Clock } from 'lucide-react';
 import PropertyDrawer from './PropertyDrawer';
+import { saveSearchQuery, getMySearchHistory } from '../../lib/search-actions';
 
 export default function DataGridClient() {
   const [data, setData] = useState([]);
@@ -15,6 +16,11 @@ export default function DataGridClient() {
   const [pageSize, setPageSize] = useState(20);
   const [globalFilter, setGlobalFilter] = useState('');
   
+  // States para Historial de Búsqueda
+  const [searchHistory, setSearchHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const historyRef = useRef(null);
+
   // Drawer State
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -36,6 +42,28 @@ export default function DataGridClient() {
     }
   };
 
+  const fetchHistory = async () => {
+    const res = await getMySearchHistory();
+    if (res.success) {
+      setSearchHistory(res.data);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  // Efecto para ocultar el historial si clico fuera
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (historyRef.current && !historyRef.current.contains(event.target)) {
+        setShowHistory(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Efecto para recargar datos si cambia página, tamaño o búsqueda
   useEffect(() => {
     // Debounce manual simple para la búsqueda
@@ -44,6 +72,20 @@ export default function DataGridClient() {
     }, 300);
     return () => clearTimeout(delayDebounceFn);
   }, [pageIndex, pageSize, globalFilter]);
+
+  const handleKeyDown = async (e) => {
+    if (e.key === 'Enter' && globalFilter.trim() !== '') {
+      setShowHistory(false);
+      await saveSearchQuery(globalFilter);
+      fetchHistory(); // Recargar el historial tras guardar
+    }
+  };
+
+  const selectHistoryItem = (query) => {
+    setGlobalFilter(query);
+    setPageIndex(1);
+    setShowHistory(false);
+  };
 
   const handleRowClick = (property) => {
     setSelectedProperty(property);
@@ -114,8 +156,8 @@ export default function DataGridClient() {
   return (
     <div className="space-y-4">
       
-      {/* Barra de Búsqueda Premium */}
-      <div className="relative group">
+      {/* Barra de Búsqueda Premium con Historial Privado */}
+      <div className="relative group w-full md:w-1/2" ref={historyRef}>
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-violet-400 transition-colors">
           <Search size={18} />
         </div>
@@ -123,9 +165,33 @@ export default function DataGridClient() {
           type="text"
           value={globalFilter}
           onChange={(e) => { setGlobalFilter(e.target.value); setPageIndex(1); }}
-          placeholder="Buscar por catastro, dirección o municipio..."
-          className="w-full md:w-1/2 pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/50 text-slate-200 outline-none transition-all duration-300 focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 shadow-inner"
+          onFocus={() => setShowHistory(true)}
+          onKeyDown={handleKeyDown}
+          placeholder="Buscar por catastro, dirección o municipio... (Presiona Enter para guardar)"
+          className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/50 text-slate-200 outline-none transition-all duration-300 focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 shadow-inner"
         />
+
+        {/* Panel de Historial de Búsqueda */}
+        {showHistory && searchHistory.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden font-inter">
+            <div className="px-4 py-2 bg-slate-800/50 text-xs font-semibold text-slate-400 flex items-center gap-2 border-b border-slate-700/50">
+              <Clock size={12} /> Búsquedas Recientes
+            </div>
+            <ul className="py-1 max-h-60 overflow-y-auto">
+              {searchHistory.map((query, idx) => (
+                <li key={idx}>
+                  <button
+                    onClick={() => selectHistoryItem(query)}
+                    className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-violet-600/20 hover:text-violet-300 transition-colors flex items-center gap-2"
+                  >
+                    <Search size={14} className="text-slate-500" />
+                    {query}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Contenedor de la Tabla Glassmorphism */}
