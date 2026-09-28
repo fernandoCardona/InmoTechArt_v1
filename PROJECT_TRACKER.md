@@ -62,7 +62,7 @@
 
 ### FASE 4: DESPLIEGUE PRODUCCIÓN
 - [x] Pruebas E2E (Next Build, Linting).
-- [ ] Push a GitHub y verificación de CI/CD.
+- [x] Push a GitHub y verificación de CI/CD.
 - [ ] Despliegue en Dokploy VPS.
 
 ---
