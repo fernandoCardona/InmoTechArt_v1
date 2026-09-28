@@ -63,7 +63,14 @@
 ### FASE 4: DESPLIEGUE PRODUCCIÓN
 - [x] Pruebas E2E (Next Build, Linting).
 - [x] Push a GitHub y verificación de CI/CD.
-- [ ] Despliegue en Dokploy VPS.
+- [x] Despliegue en Dokploy VPS (Manual Generado).
+
+### FASE 5: MULTIDIOMA (i18n) & UI PREMIUM
+- [ ] Ampliar base de datos (Campo `locale` en `users`).
+- [ ] Configurar librería `next-intl` (Manejo automático de Idioma Browser/Cookie/BD).
+- [ ] Crear diccionarios de idiomas (ES y CA) por páginas en `/locales`.
+- [ ] Refactorizar Sidebar (Colapsable, React-Icons, Framer Motion).
+- [ ] Implementar conmutador de idioma en el perfil.
 
 ---
 

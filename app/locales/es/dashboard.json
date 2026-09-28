@@ -1,0 +1,12 @@
+{
+  "Sidebar": {
+    "title": "InmoTechArt",
+    "subtitle": "IA Co-Pilot",
+    "overview": "Vista General",
+    "import": "Importar Datos",
+    "rag": "Asistente Legal RAG",
+    "admin": "Seguridad",
+    "settings": "Configuración",
+    "logout": "Cerrar Sesión"
+  }
+}

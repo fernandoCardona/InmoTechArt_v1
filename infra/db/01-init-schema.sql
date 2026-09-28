@@ -64,6 +64,7 @@ CREATE TABLE app_core.users (
     password_hash VARCHAR(255) NOT NULL,              -- bcrypt con cost=12
     full_name     VARCHAR(150) NOT NULL,
     role          app_core.user_role    NOT NULL DEFAULT 'AGENT',
+    locale        VARCHAR(5)   NOT NULL DEFAULT 'es',
     is_active     BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()

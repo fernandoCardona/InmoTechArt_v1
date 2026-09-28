@@ -13,6 +13,7 @@ export const users = appCore.table('users', {
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   fullName: varchar('full_name', { length: 150 }).notNull(),
   role: varchar('role', { length: 50 }).notNull().default('AGENT'),
+  locale: varchar('locale', { length: 5 }).notNull().default('es'),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
