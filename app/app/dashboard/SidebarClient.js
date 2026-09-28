@@ -12,13 +12,31 @@ import {
   LuSettings,
   LuLogOut, 
   LuChevronLeft, 
-  LuChevronRight 
+  LuChevronRight,
+  LuHistory,
+  LuSearch,
+  LuChevronDown
 } from 'react-icons/lu';
 import { logout } from '../../lib/actions';
+import { getMySearchHistory } from '../../lib/search-actions';
 
 export default function SidebarClient({ t, userRole }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [searchHistory, setSearchHistory] = useState([]);
   const pathname = usePathname();
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      const res = await getMySearchHistory();
+      if (res.success) {
+        setSearchHistory(res.data.slice(0, 5)); // Solo 5
+      }
+    };
+    fetchHistory();
+    const interval = setInterval(fetchHistory, 15000); // Poll cada 15s
+    return () => clearInterval(interval);
+  }, []);
 
   // Filtrar los elementos por rol
   const allMenuItems = [
@@ -111,6 +129,64 @@ export default function SidebarClient({ t, userRole }) {
             </Link>
           );
         })}
+
+        {/* Sección Especial: Historial Reciente */}
+        <div className="pt-4 mt-4 border-t border-slate-800/50">
+          <button
+            onClick={() => {
+              if (isCollapsed) setIsCollapsed(false);
+              setIsHistoryOpen(!isHistoryOpen);
+            }}
+            className="w-full flex items-center justify-between px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-white transition-colors group"
+          >
+            <div className="flex items-center">
+              <LuHistory size={20} className="flex-shrink-0 group-hover:text-amber-400 transition-colors" />
+              <AnimatePresence>
+                {!isCollapsed && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    className="ml-4 text-sm font-medium whitespace-nowrap overflow-hidden text-left"
+                  >
+                    Búsquedas Recientes
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </div>
+            {!isCollapsed && (
+              <LuChevronDown size={16} className={`transform transition-transform duration-300 ${isHistoryOpen ? 'rotate-180' : ''}`} />
+            )}
+          </button>
+
+          <AnimatePresence>
+            {!isCollapsed && isHistoryOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="pl-9 pr-3 py-2 space-y-1">
+                  {searchHistory.length === 0 ? (
+                    <p className="text-xs text-slate-500 py-2">No hay historial</p>
+                  ) : (
+                    searchHistory.map((query, idx) => (
+                      <div 
+                        key={idx}
+                        className="flex items-center gap-2 py-1.5 px-2 rounded-lg text-sm text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 cursor-pointer transition-colors truncate"
+                      >
+                        <LuSearch size={12} className="flex-shrink-0" />
+                        <span className="truncate" title={query}>{query}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
       </nav>
 
       {/* Footer (Configuración + Logout) */}
