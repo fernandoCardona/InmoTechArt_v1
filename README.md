@@ -53,7 +53,7 @@ InmoTechArt_v1/
 
 ---
 
-## Arranque Rápido (Desarrollo Local)
+<!-- ## Arranque Rápido (Desarrollo Local)
 
 ```bash
 # 1. Configura las variables de entorno
@@ -108,4 +108,4 @@ Flujo GitOps automático:
 1. `git push origin main`
 2. GitHub Actions ejecuta los tests
 3. Si pasan, notifica a Dokploy vía webhook
-4. Dokploy redesplega en VPS sin downtime
+4. Dokploy redesplega en VPS sin downtime -->
