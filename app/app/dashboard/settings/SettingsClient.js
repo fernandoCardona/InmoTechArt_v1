@@ -117,27 +117,25 @@ export default function SettingsClient({ initialData }) {
             </div>
           </div>
 
-          {isEditingProfile && (
-            <div className="flex gap-3 pt-2">
-              <button 
-                type="button"
-                onClick={() => {
-                  setProfileData({ fullName: initialData?.fullName || '', email: initialData?.email || '' });
-                  setIsEditingProfile(false);
-                }}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-2.5 rounded-lg transition-colors border border-slate-700"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="submit"
-                disabled={profileLoading}
-                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {profileLoading ? 'Guardando...' : 'Guardar Cambios'}
-              </button>
-            </div>
-          )}
+          <div className="flex gap-3 pt-2">
+            <button 
+              type="button"
+              onClick={() => {
+                setProfileData({ fullName: initialData?.fullName || '', email: initialData?.email || '' });
+                setIsEditingProfile(false);
+              }}
+              className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-2.5 rounded-lg transition-colors border border-slate-700"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit"
+              disabled={profileLoading}
+              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {profileLoading ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
         </form>
         {renderMessage(profileMsg)}
       </div>
@@ -191,26 +189,24 @@ export default function SettingsClient({ initialData }) {
             </div>
           </div>
           
-          {(passData.currentPassword || passData.newPassword || passData.confirmPassword) && (
-            <div className="flex gap-3 pt-2">
-               <button 
-                type="button"
-                onClick={() => {
-                  setPassData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                }}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-2.5 rounded-lg transition-colors border border-slate-700"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="submit"
-                disabled={passLoading}
-                className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {passLoading ? 'Actualizando...' : 'Cambiar Contraseña'}
-              </button>
-            </div>
-          )}
+          <div className="flex gap-3 pt-2">
+             <button 
+              type="button"
+              onClick={() => {
+                setPassData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+              }}
+              className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-2.5 rounded-lg transition-colors border border-slate-700"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit"
+              disabled={passLoading}
+              className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {passLoading ? 'Actualizando...' : 'Cambiar Contraseña'}
+            </button>
+          </div>
         </form>
         {renderMessage(passMsg)}
       </div>
