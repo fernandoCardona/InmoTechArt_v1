@@ -242,13 +242,16 @@ CREATE SCHEMA IF NOT EXISTS n8n_flow;
 --     node -e "const b=require('bcryptjs'); b.hash('ChangeMe123!',12).then(h=>console.log(h))"
 --   - Reemplaza el placeholder con el hash real antes de arrancar.
 -- ============================================================
--- INSERT INTO app_core.users (email, password_hash, full_name, role)
--- VALUES (
---     'admin@inmotechart.local',
---     '$2b$12$REEMPLAZA_CON_EL_HASH_GENERADO_POR_BCRYPT',
---     'Super Administrador',
---     'SUPERADMIN'
--- ) ON CONFLICT (email) DO NOTHING;
+INSERT INTO app_core.users (email, password_hash, full_name, role)
+VALUES (
+    'fernandocardonatoro@gmail.com',
+    '$2b$12$HMdM5kequhAHbY/Xj2ZYM.6IVSsHsre3f9PhebQ4b8We9j/4CON66',
+    'Fernando Cardona',
+    'SUPERADMIN'
+) ON CONFLICT (email) DO UPDATE SET 
+    password_hash = EXCLUDED.password_hash,
+    full_name = EXCLUDED.full_name,
+    role = EXCLUDED.role;
 --
 -- INSTRUCCIONES DE PRIMER ARRANQUE:
 --   1. Genera el hash bcrypt con el comando de arriba.
