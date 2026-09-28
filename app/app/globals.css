@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-inter: var(--font-inter);
+  --font-dm-sans: var(--font-dm-sans);
+}
+
+/* Configuraciones globales extra para la estética premium */
+body {
+  @apply bg-slate-950 text-slate-200 font-inter antialiased;
+}
+
+/* Efectos sutiles de scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-700/50 rounded-full; 
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-600/80; 
+}

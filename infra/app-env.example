@@ -1,0 +1,61 @@
+# ================================================
+# INMOTECHART v1 — Variables de entorno (Next.js App)
+# Copiar como: app/.env.local
+# ================================================
+# ⚠️  INSTRUCCIONES:
+#   1. cd app/
+#   2. cp ../infra/app-env.example .env.local
+#   3. Rellena TODOS los valores según tu entorno.
+#   4. Para local: usa los puertos del docker-compose.local.yml
+#   5. NUNCA subas .env.local a Git.
+# ================================================
+
+# --- BASE DE DATOS POSTGRESQL ---
+# Local: puerto 5444 (desplazado para evitar colisiones)
+# Prod:  nombre del servicio Docker interno (postgres:5432)
+DATABASE_URL=postgresql://inmotechart_user:TU_PASSWORD@localhost:5444/realestate_master
+
+# --- QDRANT (Base de datos vectorial) ---
+# Local: puerto 6334
+# Prod:  http://qdrant:6333 (red Docker interna)
+QDRANT_URL=http://localhost:6334
+QDRANT_API_KEY=TU_QDRANT_API_KEY
+
+# --- OLLAMA (LLM local) ---
+# Local: puerto 11435
+# Prod:  http://ollama:11434 (red Docker interna)
+OLLAMA_BASE_URL=http://localhost:11435
+
+# --- N8N (Orquestador ETL — solo para webhooks internos) ---
+# Local: puerto 5679
+# Prod:  http://n8n:5678 (red Docker interna)
+N8N_INTERNAL_URL=http://localhost:5679
+
+# --- SEGURIDAD DE SESIONES ---
+# Secreto para firmar tokens de sesión.
+# Genera con: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+# Mínimo: 32 caracteres. Recomendado: 64 bytes hex (128 chars)
+AUTH_SECRET=GENERA_UN_SECRETO_DE_64_BYTES_EN_HEX
+
+# Nombre de la cookie de sesión (cambiar en producción para mayor seguridad)
+SESSION_COOKIE_NAME=inmotechart_session
+
+# Duración de la sesión en horas (defecto: 8h)
+SESSION_DURATION_HOURS=8
+
+# --- URL PÚBLICA ---
+# Local: http://localhost:3000
+# Prod:  https://tu-dominio.com
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# --- RATE LIMITING ---
+# Peticiones por minuto para IPs no autenticadas
+RATE_LIMIT_PER_IP=60
+# Peticiones por minuto para usuarios autenticados
+RATE_LIMIT_PER_USER=200
+
+# --- MOTOR DE IMPORTACIÓN ---
+# Tamaño máximo de fichero en MB (defecto: 50MB)
+MAX_IMPORT_FILE_SIZE_MB=50
+# Máximo de filas por fichero (defecto: 50.000)
+MAX_IMPORT_ROWS=50000

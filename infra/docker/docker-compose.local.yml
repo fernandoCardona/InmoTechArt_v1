@@ -1,0 +1,120 @@
+version: '3.8'
+name: InmoTechArt
+
+# ============================================================
+# docker-compose.LOCAL.yml — Solo para desarrollo en Docker Desktop
+# Los puertos están desplazados para evitar colisiones con otros proyectos.
+#
+# IMPORTANTE: En producción (VPS) usar docker-compose.prod.yml
+# que NO expone puertos al exterior.
+# ============================================================
+
+networks:
+  app-internal-network:
+    driver: bridge
+
+volumes:
+  pg_data:
+  qdrant_data:
+  n8n_data:
+  ollama_models:
+  shared_imports:
+
+services:
+
+  # ----------------------------------------------------------
+  # POSTGRESQL 16 — Base de datos relacional principal
+  # Puerto local: 5444 (para evitar colisionar con el 5432 estándar)
+  # ----------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: inmotechart_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       realestate_master
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA:            /var/lib/postgresql/data/pgdata
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ../db/01-init-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql:ro
+    ports:
+      - "5444:5432"   # HOST:CONTAINER — usar 5444 en tu cliente de BD local
+    networks:
+      - app-internal-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d realestate_master"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ----------------------------------------------------------
+  # QDRANT v1.11 — Base de datos vectorial para RAG jurídico
+  # Puerto local: 6334 (para evitar colisionar con el 6333 estándar)
+  # ----------------------------------------------------------
+  qdrant:
+    image: qdrant/qdrant:v1.11.3
+    container_name: inmotechart_qdrant
+    restart: unless-stopped
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
+    volumes:
+      - qdrant_data:/qdrant/storage
+    ports:
+      - "6334:6333"   # HOST:CONTAINER
+    networks:
+      - app-internal-network
+
+  # ----------------------------------------------------------
+  # OLLAMA — Inferencia LLM local (sin datos a terceros)
+  # Puerto local: 11435 (para evitar colisionar con el 11434 estándar)
+  # Tras arrancar, descargar modelos con:
+  #   docker exec -it inmotechart_ollama ollama pull qwen2.5:7b-instruct
+  #   docker exec -it inmotechart_ollama ollama pull nomic-embed-text
+  # ----------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: inmotechart_ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "11435:11434"  # HOST:CONTAINER
+    networks:
+      - app-internal-network
+
+  # ----------------------------------------------------------
+  # N8N — Orquestador ETL / Automatización de ingestas
+  # Puerto local: 5679 (para evitar colisionar con el 5678 estándar)
+  # ----------------------------------------------------------
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: inmotechart_n8n
+    restart: unless-stopped
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=development
+      - WEBHOOK_URL=http://localhost:5679/
+      - GENERIC_TIMEZONE=Europe/Madrid
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=realestate_master
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_POSTGRESDB_SCHEMA=n8n_flow
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - shared_imports:/data/imports
+    ports:
+      - "5679:5678"   # HOST:CONTAINER
+    networks:
+      - app-internal-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Para que n8n pueda llamar a Next.js (http://host.docker.internal:3000)
+    depends_on:
+      postgres:
+        condition: service_healthy

@@ -1,0 +1,154 @@
+version: '3.8'
+
+# ============================================================
+# docker-compose.PROD.yml — Para VPS Hostinger + Dokploy
+#
+# DIFERENCIAS CLAVE con el local:
+# 1. NINGÚN puerto expuesto al exterior. Solo Traefik accede a la red.
+# 2. dokploy-network conecta los servicios web con Traefik.
+# 3. restart: always (no unless-stopped).
+# 4. NODE_ENV=production en n8n.
+# 5. Las variables de entorno se configuran en el panel de Dokploy,
+#    nunca en este archivo.
+# ============================================================
+
+networks:
+  dokploy-network:
+    external: true          # Red gestionada por Dokploy/Traefik
+  app-internal-network:
+    driver: bridge          # Red privada entre servicios. Sin acceso exterior.
+
+volumes:
+  pg_data:
+  qdrant_data:
+  n8n_data:
+  ollama_models:
+  shared_imports:
+
+services:
+
+  # ----------------------------------------------------------
+  # POSTGRESQL 16 — SOLO red interna. Sin puertos expuestos.
+  # ----------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: inmotechart_postgres
+    restart: always
+    environment:
+      POSTGRES_DB:       realestate_master
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA:            /var/lib/postgresql/data/pgdata
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ../db/01-init-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql:ro
+    # SIN ports: — Inaccesible desde el exterior del VPS
+    networks:
+      - app-internal-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d realestate_master"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ----------------------------------------------------------
+  # QDRANT — SOLO red interna. Sin puertos expuestos.
+  # ----------------------------------------------------------
+  qdrant:
+    image: qdrant/qdrant:v1.11.3
+    container_name: inmotechart_qdrant
+    restart: always
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
+    volumes:
+      - qdrant_data:/qdrant/storage
+    # SIN ports:
+    networks:
+      - app-internal-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:6333/healthz || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ----------------------------------------------------------
+  # OLLAMA — SOLO red interna. Sin puertos expuestos.
+  # Límite de memoria: 7GB para evitar colapsar el VPS (ajustar según RAM disponible)
+  # ----------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: inmotechart_ollama
+    restart: always
+    volumes:
+      - ollama_models:/root/.ollama
+    # SIN ports:
+    networks:
+      - app-internal-network
+    deploy:
+      resources:
+        limits:
+          memory: 7g
+
+  # ----------------------------------------------------------
+  # N8N — Expuesto ÚNICAMENTE a través de Traefik con SSL.
+  # ----------------------------------------------------------
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: inmotechart_n8n
+    restart: always
+    environment:
+      - N8N_HOST=${N8N_DOMAIN}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://${N8N_DOMAIN}/
+      - GENERIC_TIMEZONE=Europe/Madrid
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=realestate_master
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_POSTGRESDB_SCHEMA=n8n_flow
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - shared_imports:/data/imports
+    # SIN ports: — Traefik enruta el tráfico HTTPS directamente
+    networks:
+      - app-internal-network
+      - dokploy-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ----------------------------------------------------------
+  # WEBAPP (Next.js) — Expuesta ÚNICAMENTE a través de Traefik con SSL.
+  # ----------------------------------------------------------
+  web_app:
+    build:
+      context: ../..
+      dockerfile: infra/app.Dockerfile
+    container_name: inmotechart_webapp
+    restart: always
+    environment:
+      DATABASE_URL:          postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/realestate_master
+      QDRANT_URL:            http://qdrant:6333
+      QDRANT_API_KEY:        ${QDRANT_API_KEY}
+      OLLAMA_BASE_URL:       http://ollama:11434
+      N8N_INTERNAL_URL:      http://n8n:5678
+      AUTH_SECRET:           ${AUTH_SECRET}
+      NEXT_PUBLIC_APP_URL:   https://${APP_DOMAIN}
+      NODE_ENV:              production
+    volumes:
+      - shared_imports:/app/uploads
+    # SIN ports: — Traefik enruta el tráfico HTTPS directamente
+    networks:
+      - app-internal-network
+      - dokploy-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
