@@ -8,22 +8,28 @@ import {
   LuLayoutDashboard, 
   LuUpload, 
   LuBot, 
-  LuShieldCheck, 
+  LuShieldCheck,
+  LuSettings,
   LuLogOut, 
   LuChevronLeft, 
   LuChevronRight 
 } from 'react-icons/lu';
+import { logout } from '../../lib/actions';
 
-export default function SidebarClient({ t }) {
+export default function SidebarClient({ t, userRole }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
-  const menuItems = [
-    { href: '/dashboard', icon: LuLayoutDashboard, label: t.overview },
-    { href: '/dashboard/import', icon: LuUpload, label: t.import },
-    { href: '/dashboard/ai', icon: LuBot, label: t.rag },
-    { href: '/dashboard/admin', icon: LuShieldCheck, label: t.admin },
+  // Filtrar los elementos por rol y añadir Configuración
+  const allMenuItems = [
+    { href: '/dashboard', icon: LuLayoutDashboard, label: t.overview, roles: ['SUPERADMIN', 'ADMIN', 'AGENT', 'READONLY'] },
+    { href: '/dashboard/import', icon: LuUpload, label: t.import, roles: ['SUPERADMIN', 'ADMIN', 'AGENT'] },
+    { href: '/dashboard/ai', icon: LuBot, label: t.rag, roles: ['SUPERADMIN', 'ADMIN', 'AGENT', 'READONLY'] },
+    { href: '/dashboard/admin', icon: LuShieldCheck, label: t.admin, roles: ['SUPERADMIN'] },
+    { href: '/dashboard/settings', icon: LuSettings, label: t.settings, roles: ['SUPERADMIN', 'ADMIN', 'AGENT', 'READONLY'] },
   ];
+
+  const menuItems = allMenuItems.filter(item => item.roles.includes(userRole || 'AGENT'));
 
   return (
     <motion.aside
@@ -64,7 +70,7 @@ export default function SidebarClient({ t }) {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-2 scrollbar-hide">
         {menuItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+          const isActive = pathname === item.href || (pathname.startsWith(item.href + '/') && item.href !== '/dashboard');
           const Icon = item.icon;
           
           return (
@@ -110,7 +116,10 @@ export default function SidebarClient({ t }) {
 
       {/* Footer / Logout */}
       <div className="p-3 border-t border-slate-800/50 mb-2">
-        <button className="relative w-full flex items-center px-3 py-3 rounded-xl text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 transition-all duration-300 group">
+        <button 
+          onClick={() => logout()}
+          className="relative w-full flex items-center px-3 py-3 rounded-xl text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 transition-all duration-300 group"
+        >
           <LuLogOut size={20} className="flex-shrink-0" />
           <AnimatePresence>
             {!isCollapsed && (
