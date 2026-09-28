@@ -187,60 +187,6 @@ export default function AdminClient() {
         </div>
       </div>
       
-      {/* Fila Media: Gestión de Usuarios */}
-      <div className="mt-8 space-y-4 col-span-1 lg:col-span-2">
-        <h2 className="text-xl font-semibold text-slate-200 flex items-center gap-2">
-          <Users size={20} className="text-amber-400" /> Gestión de Usuarios y Accesos
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Formulario Crear Usuario */}
-          <div className="rounded-2xl bg-white/5 dark:bg-slate-900/50 backdrop-blur-xl border border-white/10 dark:border-slate-800 shadow-xl overflow-hidden p-6">
-            <h3 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2"><UserPlus size={16}/> Agregar Nuevo</h3>
-            <form onSubmit={handleCreateUser} className="space-y-3">
-              <input type="text" placeholder="Nombre completo" required value={newUser.fullName} onChange={e=>setNewUser({...newUser, fullName: e.target.value})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none" />
-              <input type="email" placeholder="Correo electrónico" required value={newUser.email} onChange={e=>setNewUser({...newUser, email: e.target.value})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none" />
-              <input type="password" placeholder="Contraseña segura" required minLength={8} value={newUser.password} onChange={e=>setNewUser({...newUser, password: e.target.value})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none" />
-              <select value={newUser.role} onChange={e=>setNewUser({...newUser, role: e.target.value})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none appearance-none">
-                <option value="AGENT">AGENTE</option>
-                <option value="ADMIN">ADMIN</option>
-                <option value="READONLY">SOLO LECTURA</option>
-                <option value="SUPERADMIN">SUPER ADMIN</option>
-              </select>
-              <button type="submit" disabled={isCreating} className="w-full bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30 font-medium py-2 rounded-lg transition-colors text-sm">
-                {isCreating ? 'Creando...' : 'Crear Usuario'}
-              </button>
-            </form>
-          </div>
-
-          {/* Lista de Usuarios */}
-          <div className="md:col-span-2 rounded-2xl bg-white/5 dark:bg-slate-900/50 backdrop-blur-xl border border-white/10 dark:border-slate-800 shadow-xl overflow-hidden">
-            <div className="divide-y divide-slate-800/50 max-h-[350px] overflow-y-auto">
-              {usersList.map(u => (
-                <div key={u.id} className="p-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">{u.fullName}</p>
-                    <p className="text-xs text-slate-500">{u.email}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <select 
-                      value={u.role} 
-                      onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                      className={`text-xs font-bold rounded-lg px-2 py-1 outline-none border ${u.role==='SUPERADMIN'?'bg-rose-500/10 text-rose-400 border-rose-500/20': u.role==='ADMIN'?'bg-amber-500/10 text-amber-400 border-amber-500/20': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}
-                    >
-                      <option value="AGENT">AGENTE</option>
-                      <option value="ADMIN">ADMIN</option>
-                      <option value="READONLY">LECTURA</option>
-                      <option value="SUPERADMIN">SUPERADMIN</option>
-                    </select>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Fila Inferior: Historial Global de Búsquedas */}
       <div className="mt-8 space-y-4 col-span-1 lg:col-span-2">
         <h2 className="text-xl font-semibold text-slate-200 flex items-center gap-2">

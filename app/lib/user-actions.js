@@ -127,10 +127,12 @@ export async function updateUserAccess(userId, updates) {
 
   try {
     const updateData = {};
-    if (updates.role) updateData.role = updates.role;
+    if (updates.role !== undefined) updateData.role = updates.role;
     if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
+    if (updates.fullName !== undefined) updateData.fullName = updates.fullName;
+    if (updates.email !== undefined) updateData.email = updates.email;
     
-    if (updates.newPassword) {
+    if (updates.newPassword && updates.newPassword.trim() !== '') {
       updateData.passwordHash = await bcrypt.hash(updates.newPassword, 12);
     }
 
@@ -142,5 +144,28 @@ export async function updateUserAccess(userId, updates) {
   } catch (error) {
     console.error('Error updating user access:', error);
     return { success: false, error: 'Error al actualizar usuario' };
+  }
+}
+
+export async function deleteUser(userId) {
+  if (!(await isSuperAdmin())) return { success: false, error: 'Acceso denegado' };
+
+  try {
+    // Buscar usuario a borrar
+    const targetRows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (targetRows.length === 0) return { success: false, error: 'Usuario no encontrado' };
+    
+    const targetUser = targetRows[0];
+    
+    // Proteger a los Superadmins
+    if (targetUser.role === 'SUPERADMIN') {
+      return { success: false, error: 'No se puede eliminar a un usuario Super Admin.' };
+    }
+
+    await db.delete(users).where(eq(users.id, userId));
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return { success: false, error: 'Error al eliminar usuario. Puede que tenga registros asociados.' };
   }
 }
