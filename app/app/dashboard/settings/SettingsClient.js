@@ -1,23 +1,77 @@
 'use client';
 
 import { useState } from 'react';
-import { LuUser, LuLock, LuMoon, LuSun, LuPalette } from 'react-icons/lu';
+import { LuUser, LuLock, LuMoon, LuSun, LuPalette, LuCircleCheck, LuCircleX } from 'react-icons/lu';
+import { updateUserProfile, updateUserPassword } from '../../../lib/user-actions';
 
 export default function SettingsClient({ initialData }) {
   const [theme, setTheme] = useState('dark');
-  const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Perfil State
+  const [profileData, setProfileData] = useState({ fullName: initialData?.fullName || '', email: initialData?.email || '' });
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileMsg, setProfileMsg] = useState(null);
+
+  // Password State
+  const [passData, setPassData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passLoading, setPassLoading] = useState(false);
+  const [passMsg, setPassMsg] = useState(null);
 
   const toggleTheme = (newTheme) => {
     setTheme(newTheme);
-    // En un proyecto real, mutar el localStorage y el classList de HTML
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(newTheme);
   };
 
-  const handleFakeSubmit = (e) => {
+  const handleProfileSubmit = async (e) => {
     e.preventDefault();
-    setIsUpdating(true);
-    setTimeout(() => setIsUpdating(false), 1500);
+    setProfileLoading(true);
+    setProfileMsg(null);
+    const res = await updateUserProfile(profileData);
+    if (res.success) {
+      setProfileMsg({ type: 'success', text: 'Perfil actualizado correctamente.' });
+      setIsEditingProfile(false);
+    } else {
+      setProfileMsg({ type: 'error', text: res.error });
+    }
+    setProfileLoading(false);
+    setTimeout(() => setProfileMsg(null), 3000);
+  };
+
+  const handlePassSubmit = async (e) => {
+    e.preventDefault();
+    if (passData.newPassword !== passData.confirmPassword) {
+      return setPassMsg({ type: 'error', text: 'Las nuevas contraseñas no coinciden.' });
+    }
+    if (passData.newPassword.length < 8) {
+      return setPassMsg({ type: 'error', text: 'La nueva contraseña debe tener al menos 8 caracteres.' });
+    }
+
+    setPassLoading(true);
+    setPassMsg(null);
+    const res = await updateUserPassword({
+      currentPassword: passData.currentPassword,
+      newPassword: passData.newPassword
+    });
+    if (res.success) {
+      setPassMsg({ type: 'success', text: 'Contraseña actualizada de forma segura.' });
+      setPassData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } else {
+      setPassMsg({ type: 'error', text: res.error });
+    }
+    setPassLoading(false);
+    setTimeout(() => setPassMsg(null), 4000);
+  };
+
+  const renderMessage = (msg) => {
+    if (!msg) return null;
+    return (
+      <div className={`flex items-center gap-2 p-3 mt-3 rounded-xl text-sm ${msg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+        {msg.type === 'success' ? <LuCircleCheck size={16} /> : <LuCircleX size={16} />}
+        {msg.text}
+      </div>
+    );
   };
 
   return (
@@ -25,47 +79,67 @@ export default function SettingsClient({ initialData }) {
       
       {/* TARJETA DE PERFIL Y DATOS */}
       <div className="rounded-2xl bg-white/5 dark:bg-slate-900/50 backdrop-blur-xl border border-white/10 dark:border-slate-800 shadow-xl overflow-hidden p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center">
-            <LuUser size={20} />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-slate-200">Datos Personales</h3>
-            <p className="text-xs text-slate-400">Tu información de perfil</p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center">
+              <LuUser size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-200">Datos Personales</h3>
+              <p className="text-xs text-slate-400">Tu información de perfil y contacto</p>
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleFakeSubmit} className="space-y-4">
+        <form onSubmit={handleProfileSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-1">Nombre Completo</label>
             <input 
               type="text" 
-              defaultValue={initialData?.fullName || 'Super Administrador'} 
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:ring-2 focus:ring-violet-500 outline-none"
+              value={profileData.fullName}
+              onChange={(e) => { setProfileData({...profileData, fullName: e.target.value}); setIsEditingProfile(true); }}
+              className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Correo Electrónico (Solo Lectura)</label>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Correo Electrónico (Login ID)</label>
             <input 
-              type="email" 
-              readOnly
-              defaultValue={initialData?.email || 'admin@inmotechart.local'} 
-              className="w-full bg-slate-800/30 border border-slate-700/50 rounded-lg px-4 py-2.5 text-sm text-slate-500 cursor-not-allowed outline-none"
+              type="email"
+              value={profileData.email}
+              onChange={(e) => { setProfileData({...profileData, email: e.target.value}); setIsEditingProfile(true); }}
+              className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Rol Asignado</label>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Rol Asignado (Solo Lectura)</label>
             <div className="inline-block px-3 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-semibold border border-emerald-500/20">
               {initialData?.role || 'SUPERADMIN'}
             </div>
           </div>
-          <button 
-            type="submit"
-            className="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 rounded-lg transition-colors border border-slate-700"
-          >
-            {isUpdating ? 'Guardando...' : 'Actualizar Perfil'}
-          </button>
+
+          {isEditingProfile && (
+            <div className="flex gap-3 pt-2">
+              <button 
+                type="button"
+                onClick={() => {
+                  setProfileData({ fullName: initialData?.fullName || '', email: initialData?.email || '' });
+                  setIsEditingProfile(false);
+                }}
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-2.5 rounded-lg transition-colors border border-slate-700"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit"
+                disabled={profileLoading}
+                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {profileLoading ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          )}
         </form>
+        {renderMessage(profileMsg)}
       </div>
 
       {/* TARJETA DE SEGURIDAD (PASSWORD) */}
@@ -80,11 +154,14 @@ export default function SettingsClient({ initialData }) {
           </div>
         </div>
 
-        <form onSubmit={handleFakeSubmit} className="space-y-4">
+        <form onSubmit={handlePassSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-1">Contraseña Actual</label>
             <input 
               type="password" 
+              required
+              value={passData.currentPassword}
+              onChange={(e) => setPassData({...passData, currentPassword: e.target.value})}
               placeholder="••••••••"
               className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:ring-2 focus:ring-rose-500 outline-none"
             />
@@ -93,7 +170,10 @@ export default function SettingsClient({ initialData }) {
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">Nueva Contraseña</label>
               <input 
-                type="password" 
+                type="password"
+                required
+                value={passData.newPassword}
+                onChange={(e) => setPassData({...passData, newPassword: e.target.value})}
                 placeholder="Mín. 8 caracteres"
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:ring-2 focus:ring-rose-500 outline-none"
               />
@@ -102,18 +182,37 @@ export default function SettingsClient({ initialData }) {
               <label className="block text-xs font-medium text-slate-400 mb-1">Repetir Nueva</label>
               <input 
                 type="password" 
+                required
+                value={passData.confirmPassword}
+                onChange={(e) => setPassData({...passData, confirmPassword: e.target.value})}
                 placeholder="Mín. 8 caracteres"
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:ring-2 focus:ring-rose-500 outline-none"
               />
             </div>
           </div>
-          <button 
-            type="submit"
-            className="w-full bg-rose-600 hover:bg-rose-500 text-white font-medium py-2.5 rounded-lg transition-colors"
-          >
-            {isUpdating ? 'Actualizando...' : 'Cambiar Contraseña'}
-          </button>
+          
+          {(passData.currentPassword || passData.newPassword || passData.confirmPassword) && (
+            <div className="flex gap-3 pt-2">
+               <button 
+                type="button"
+                onClick={() => {
+                  setPassData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                }}
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-2.5 rounded-lg transition-colors border border-slate-700"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit"
+                disabled={passLoading}
+                className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {passLoading ? 'Actualizando...' : 'Cambiar Contraseña'}
+              </button>
+            </div>
+          )}
         </form>
+        {renderMessage(passMsg)}
       </div>
 
       {/* TARJETA DE APARIENCIA (LIGHT / DARK) */}

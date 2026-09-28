@@ -20,13 +20,12 @@ export default function SidebarClient({ t, userRole }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
-  // Filtrar los elementos por rol y añadir Configuración
+  // Filtrar los elementos por rol
   const allMenuItems = [
     { href: '/dashboard', icon: LuLayoutDashboard, label: t.overview, roles: ['SUPERADMIN', 'ADMIN', 'AGENT', 'READONLY'] },
     { href: '/dashboard/import', icon: LuUpload, label: t.import, roles: ['SUPERADMIN', 'ADMIN', 'AGENT'] },
     { href: '/dashboard/ai', icon: LuBot, label: t.rag, roles: ['SUPERADMIN', 'ADMIN', 'AGENT', 'READONLY'] },
     { href: '/dashboard/admin', icon: LuShieldCheck, label: t.admin, roles: ['SUPERADMIN'] },
-    { href: '/dashboard/settings', icon: LuSettings, label: t.settings, roles: ['SUPERADMIN', 'ADMIN', 'AGENT', 'READONLY'] },
   ];
 
   const menuItems = allMenuItems.filter(item => item.roles.includes(userRole || 'AGENT'));
@@ -114,8 +113,43 @@ export default function SidebarClient({ t, userRole }) {
         })}
       </nav>
 
-      {/* Footer / Logout */}
-      <div className="p-3 border-t border-slate-800/50 mb-2">
+      {/* Footer (Configuración + Logout) */}
+      <div className="p-3 border-t border-slate-800/50 mb-2 space-y-1">
+        
+        <Link 
+          href="/dashboard/settings"
+          className={`relative w-full flex items-center px-3 py-3 rounded-xl transition-all duration-300 group ${
+            pathname === '/dashboard/settings'
+              ? 'bg-violet-600/10 text-violet-400' 
+              : 'text-slate-500 hover:bg-slate-800/50 hover:text-white'
+          }`}
+        >
+          {pathname === '/dashboard/settings' && (
+            <motion.div 
+              layoutId="active-nav-glow-footer"
+              className="absolute inset-0 bg-violet-600/10 rounded-xl border border-violet-500/20"
+              initial={false}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            />
+          )}
+          <div className="relative z-10 flex items-center w-full">
+            <LuSettings size={20} className="flex-shrink-0 group-hover:text-violet-400 transition-colors" />
+            <AnimatePresence>
+              {!isCollapsed && (
+                <motion.span
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="ml-4 text-sm font-medium whitespace-nowrap overflow-hidden"
+                >
+                  {t.settings}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+        </Link>
+
         <button 
           onClick={() => logout()}
           className="relative w-full flex items-center px-3 py-3 rounded-xl text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 transition-all duration-300 group"
