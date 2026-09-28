@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LuLayoutDashboard, 
-  LuUploadCloud, 
+  LuUpload, 
   LuBot, 
   LuShieldCheck, 
   LuLogOut, 
@@ -20,7 +20,7 @@ export default function SidebarClient({ t }) {
 
   const menuItems = [
     { href: '/dashboard', icon: LuLayoutDashboard, label: t.overview },
-    { href: '/dashboard/import', icon: LuUploadCloud, label: t.import },
+    { href: '/dashboard/import', icon: LuUpload, label: t.import },
     { href: '/dashboard/ai', icon: LuBot, label: t.rag },
     { href: '/dashboard/admin', icon: LuShieldCheck, label: t.admin },
   ];
