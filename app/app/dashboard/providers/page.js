@@ -4,7 +4,7 @@ import { decrypt } from '../../../lib/auth';
 import { redirect } from 'next/navigation';
 
 export const metadata = {
-  title: 'Proveedores | InmoTechArt',
+  title: 'Proveedores | Neretxaus',
   description: 'Gestión de proveedores de activos (Servicers, Bancos, etc.)',
 };
 

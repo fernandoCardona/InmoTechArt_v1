@@ -1,7 +1,7 @@
 import ChatClient from './ChatClient';
 
 export const metadata = {
-  title: 'Asistente Legal RAG | InmoTechArt',
+  title: 'Asistente Legal RAG | Neretxaus',
 };
 
 export default function AIPage() {

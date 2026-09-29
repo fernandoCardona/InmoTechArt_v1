@@ -104,7 +104,7 @@ export default function UsersClient() {
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-1">Correo electrónico</label>
-            <input type="email" placeholder="ejemplo@inmotechart.es" required value={newUser.email} onChange={e=>setNewUser({...newUser, email: e.target.value})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all" />
+            <input type="email" placeholder="ejemplo@neretxaus.es" required value={newUser.email} onChange={e=>setNewUser({...newUser, email: e.target.value})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all" />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-1">Contraseña inicial</label>

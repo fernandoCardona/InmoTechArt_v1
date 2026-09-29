@@ -64,7 +64,7 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: inmotechart_test
+          POSTGRES_DB: neretxaus_test
           POSTGRES_USER: test_user
           POSTGRES_PASSWORD: test_password
         options: >-
@@ -93,14 +93,14 @@ jobs:
       - name: Inicializar schema de BD de prueba
         run: |
           PGPASSWORD=test_password psql \
-            -h localhost -U test_user -d inmotechart_test \
+            -h localhost -U test_user -d neretxaus_test \
             -f infra/db/01-init-schema.sql
 
       - name: Construir la aplicación Next.js
         working-directory: ./app
         run: npm run build
         env:
-          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/inmotechart_test
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/neretxaus_test
           AUTH_SECRET: ci_test_secret_mínimo_32_chars_obligatorio
           NEXT_PUBLIC_APP_URL: http://localhost:3000
           # Ollama y Qdrant no disponibles en CI: los tests E2E mockean estas dependencias
@@ -112,7 +112,7 @@ jobs:
         working-directory: ./app
         run: npm start &
         env:
-          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/inmotechart_test
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/neretxaus_test
           AUTH_SECRET: ci_test_secret_mínimo_32_chars_obligatorio
           NEXT_PUBLIC_APP_URL: http://localhost:3000
           PORT: 3000

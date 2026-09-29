@@ -6,7 +6,7 @@ import { decrypt } from '../../../lib/auth';
 import { LuSettings } from 'react-icons/lu';
 
 export const metadata = {
-  title: 'Configuración de Perfil | InmoTechArt',
+  title: 'Configuración de Perfil | Neretxaus',
 };
 
 export default async function SettingsPage() {

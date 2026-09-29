@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 
 // Obtiene la clave secreta del entorno, con fallback para desarrollo local
-const secretKey = process.env.JWT_SECRET || 'inmotechart_default_secret_key_change_me_in_prod';
+const secretKey = process.env.JWT_SECRET || 'neretxaus_default_secret_key_change_me_in_prod';
 const key = new TextEncoder().encode(secretKey);
 
 /**

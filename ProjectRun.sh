@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # ==============================================================================
-# InmoTechArt v1 - Arranque Rápido del Proyecto (Local)
+# Neretxaus v1 - Arranque Rápido del Proyecto (Local)
 # ==============================================================================
 
 echo "============================================================"
-echo "🚀 INICIANDO INMOTECHART V1 (LOCAL) 🚀"
+echo "🚀 INICIANDO NERETXAUS V1 (LOCAL) 🚀"
 echo "============================================================"
 
 # 1. Levantar Infraestructura Docker

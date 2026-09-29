@@ -55,7 +55,7 @@ export async function POST(req) {
     }
 
     // 3. Prompting Dinámico con Contexto RAG
-    const systemPrompt = `Eres el Asistente Legal y Analista de InmoTechArt.
+    const systemPrompt = `Eres el Asistente Legal y Analista de Neretxaus.
 Respondes con precisión premium en español.
 ${contextText ? `UTILIZA ESTE CONTEXTO RECUPERADO PARA RESPONDER:\n${contextText}` : 'Si no tienes contexto específico, responde basándote en tu conocimiento legal e inmobiliario.'}`;
 

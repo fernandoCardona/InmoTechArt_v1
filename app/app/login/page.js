@@ -1,7 +1,7 @@
 import LoginForm from './LoginForm';
 
 export const metadata = {
-  title: 'Acceso Seguro | InmoTechArt v1',
+  title: 'Acceso Seguro | Neretxaus v1',
   description: 'Área segura de gestión inmobiliaria e inteligencia artificial.',
 };
 
@@ -18,7 +18,7 @@ export default function LoginPage() {
         
         <div className="text-center mb-8">
           <h1 className="text-3xl font-dm-sans font-bold tracking-tight text-white mb-2">
-            InmoTechArt <span className="text-violet-500">v1</span>
+            Neretxaus <span className="text-violet-500">v1</span>
           </h1>
           <p className="text-slate-400 text-sm font-inter">
             Autenticación de dispositivo requerida

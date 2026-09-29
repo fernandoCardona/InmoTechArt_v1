@@ -80,7 +80,7 @@ export default function LoginForm() {
           name="email"
           required 
           className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/50 text-slate-200 outline-none transition-all duration-300 focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 placeholder:text-slate-600 shadow-inner shadow-black/20"
-          placeholder="admin@inmotechart.local"
+          placeholder="admin@neretxaus.local"
         />
       </div>
 

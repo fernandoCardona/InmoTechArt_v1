@@ -12,7 +12,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata = {
-  title: "InmoTechArt v1",
+  title: "Neretxaus v1",
   description: "Plataforma Premium de Gestión de Activos Inmobiliarios e IA",
 };
 

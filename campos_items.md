@@ -1,6 +1,6 @@
 # 📊 Arquitectura de Base de Datos: Esquema Unificado de Activos (Properties)
 
-Este documento define la estructura de datos consolidada que hemos implementado en la plataforma **InmoTechArt**. Este esquema unifica los datos provenientes de diferentes tipos de orígenes (ej. Servicers como Welcome/Wantoku5 y carteras de Suelos/WIP), asegurando que toda la información crítica esté estandarizada y normalizada en una única tabla: `properties`.
+Este documento define la estructura de datos consolidada que hemos implementado en la plataforma **Neretxaus**. Este esquema unifica los datos provenientes de diferentes tipos de orígenes (ej. Servicers como Welcome/Wantoku5 y carteras de Suelos/WIP), asegurando que toda la información crítica esté estandarizada y normalizada en una única tabla: `properties`.
 
 ## Tabla: `assets.properties`
 

@@ -1,4 +1,4 @@
-# INMOTECHART v1 — Plataforma Privada de Gestión de Activos Inmobiliarios
+# NERETXAUS v1 — Plataforma Privada de Gestión de Activos Inmobiliarios
 
 > Plataforma corporativa privada para la gestión, homogeneización y análisis de activos inmobiliarios bancarios (REO / WIP / Suelo) con asistente jurídico-urbanístico IA integrado.
 
@@ -11,7 +11,7 @@ Este repositorio contiene lógica propietaria de negocio, medidas anti-scraping 
 ## Estructura del Proyecto
 
 ```
-InmoTechArt_v1/
+Neretxaus_v1/
 │
 ├── app/                    ← Aplicación Next.js 15 (código fuente)
 │   ├── Dockerfile          ← Imagen Docker para producción
@@ -65,8 +65,8 @@ cp .env.example .env
 docker-compose -f docker-compose.local.yml up -d
 
 # 3. Descarga los modelos de IA (solo la primera vez)
-docker exec -it inmotechart_ollama ollama pull qwen2.5:7b-instruct
-docker exec -it inmotechart_ollama ollama pull nomic-embed-text
+docker exec -it neretxaus_ollama ollama pull qwen2.5:7b-instruct
+docker exec -it neretxaus_ollama ollama pull nomic-embed-text
 
 # 4. Instala dependencias e inicia el servidor
 cd ../../app

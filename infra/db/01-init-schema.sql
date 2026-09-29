@@ -1,5 +1,5 @@
 -- ============================================================
--- INMOTECHART v1 — Esquema PostgreSQL completo v2
+-- NERETXAUS v1 — Esquema PostgreSQL completo v2
 -- Se ejecuta automáticamente la primera vez que arranca el contenedor.
 -- ============================================================
 -- ORDEN DE EJECUCIÓN:
@@ -270,6 +270,6 @@ VALUES (
 --   2. Descomenta las 7 líneas del INSERT de arriba.
 --   3. Reemplaza el placeholder con el hash real.
 --   4. Levanta el contenedor: docker-compose ... up -d
---   5. Accede con email: admin@inmotechart.local
+--   5. Accede con email: admin@neretxaus.local
 --   6. Cambia la contraseña INMEDIATAMENTE desde el panel de admin.
 --   7. Vuelve a comentar el INSERT (o elimínalo) para evitar re-ejecuciones.

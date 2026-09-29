@@ -1,7 +1,7 @@
 import UploaderClient from './UploaderClient';
 
 export const metadata = {
-  title: 'Importador Inmobiliario | InmoTechArt',
+  title: 'Importador Inmobiliario | Neretxaus',
 };
 
 export default function ImportPage() {

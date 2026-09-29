@@ -1,7 +1,7 @@
 import DataGridClient from './DataGridClient';
 
 export const metadata = {
-  title: 'Vista General de Activos | InmoTechArt',
+  title: 'Vista General de Activos | Neretxaus',
 };
 
 export default function DashboardPage() {

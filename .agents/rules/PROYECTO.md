@@ -1,9 +1,9 @@
 ---
-description: "Reglas fundamentales del proyecto INMOTECHART v1. Deben leerse antes de cualquier implementación."
+description: "Reglas fundamentales del proyecto NERETXAUS v1. Deben leerse antes de cualquier implementación."
 version: 1.0.0
 ---
 
-# REGLAS GLOBALES DEL PROYECTO INMOTECHART v1
+# REGLAS GLOBALES DEL PROYECTO NERETXAUS v1
 
 ## 1. RESTRICCIONES TECNOLÓGICAS (ABSOLUTAS)
 - **CERO TYPESCRIPT:** El proyecto es **100% JavaScript puro (`.js`, `.jsx`)**. Está TERMINANTEMENTE PROHIBIDO crear archivos `.ts` o `.tsx`.

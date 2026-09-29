@@ -32,7 +32,7 @@ services:
   # ----------------------------------------------------------
   postgres:
     image: postgres:16-alpine
-    container_name: inmotechart_postgres
+    container_name: neretxaus_postgres
     restart: always
     environment:
       POSTGRES_DB:       realestate_master
@@ -57,7 +57,7 @@ services:
   # ----------------------------------------------------------
   qdrant:
     image: qdrant/qdrant:v1.11.3
-    container_name: inmotechart_qdrant
+    container_name: neretxaus_qdrant
     restart: always
     environment:
       QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
@@ -79,7 +79,7 @@ services:
   # ----------------------------------------------------------
   ollama:
     image: ollama/ollama:latest
-    container_name: inmotechart_ollama
+    container_name: neretxaus_ollama
     restart: always
     volumes:
       - ollama_models:/root/.ollama
@@ -96,7 +96,7 @@ services:
   # ----------------------------------------------------------
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
-    container_name: inmotechart_n8n
+    container_name: neretxaus_n8n
     restart: always
     environment:
       - N8N_HOST=${N8N_DOMAIN}
@@ -130,7 +130,7 @@ services:
     build:
       context: ../..
       dockerfile: infra/app.Dockerfile
-    container_name: inmotechart_webapp
+    container_name: neretxaus_webapp
     restart: always
     environment:
       DATABASE_URL:          postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/realestate_master

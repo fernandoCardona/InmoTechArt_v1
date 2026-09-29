@@ -1,4 +1,4 @@
-# 📋 INMOTECHART v1 — PROJECT TRACKER & JOURNAL
+# 📋 NERETXAUS v1 — PROJECT TRACKER & JOURNAL
 
 > **Documento vivo de seguimiento del proyecto.**
 > Aquí iremos marcando el progreso, anotando decisiones de arquitectura, hallazgos (discoveries) y resolviendo issues.

@@ -1,5 +1,5 @@
 # ================================================
-# INMOTECHART v1 — Variables de entorno (Next.js App)
+# NERETXAUS v1 — Variables de entorno (Next.js App)
 # Copiar como: app/.env.local
 # ================================================
 # ⚠️  INSTRUCCIONES:
@@ -13,7 +13,7 @@
 # --- BASE DE DATOS POSTGRESQL ---
 # Local: puerto 5444 (desplazado para evitar colisiones)
 # Prod:  nombre del servicio Docker interno (postgres:5432)
-DATABASE_URL=postgresql://inmotechart_user:TU_PASSWORD@localhost:5444/realestate_master
+DATABASE_URL=postgresql://neretxaus_user:TU_PASSWORD@localhost:5444/realestate_master
 
 # --- QDRANT (Base de datos vectorial) ---
 # Local: puerto 6334
@@ -38,7 +38,7 @@ N8N_INTERNAL_URL=http://localhost:5679
 AUTH_SECRET=GENERA_UN_SECRETO_DE_64_BYTES_EN_HEX
 
 # Nombre de la cookie de sesión (cambiar en producción para mayor seguridad)
-SESSION_COOKIE_NAME=inmotechart_session
+SESSION_COOKIE_NAME=neretxaus_session
 
 # Duración de la sesión en horas (defecto: 8h)
 SESSION_DURATION_HOURS=8

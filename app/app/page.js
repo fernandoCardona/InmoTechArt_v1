@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, Database, ShieldCheck, Cpu } from 'lucide-react';
 
 export const metadata = {
-  title: 'InmoTechArt | Gestión Inteligente de Activos',
+  title: 'Neretxaus | Gestión Inteligente de Activos',
   description: 'Plataforma premium para la gestión y análisis avanzado de activos inmobiliarios.',
 };
 
@@ -37,7 +37,7 @@ export default function LandingPage() {
 
         {/* Subtitle */}
         <p className="text-lg md:text-xl text-slate-400 max-w-2xl mb-12 leading-relaxed">
-          InmoTechArt fusiona Inteligencia Artificial generativa, bases de datos vectoriales y control de acceso Zero-Trust para gobernar tu portfolio con precisión milimétrica.
+          Neretxaus fusiona Inteligencia Artificial generativa, bases de datos vectoriales y control de acceso Zero-Trust para gobernar tu portfolio con precisión milimétrica.
         </p>
 
         {/* CTA (Call To Action) */}
@@ -72,7 +72,7 @@ export default function LandingPage() {
 
       {/* Footer minimalista */}
       <footer className="absolute bottom-6 text-slate-500 text-xs font-medium tracking-wide">
-        &copy; {new Date().getFullYear()} INMOTECHART. TODOS LOS DERECHOS RESERVADOS.
+        &copy; {new Date().getFullYear()} NERETXAUS. TODOS LOS DERECHOS RESERVADOS.
       </footer>
     </div>
   );
