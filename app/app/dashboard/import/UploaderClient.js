@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { LuCheck, LuPencil, LuTriangleAlert } from 'react-icons/lu';
 
 export default function UploaderClient() {
   const [file, setFile] = useState(null);
@@ -9,6 +10,11 @@ export default function UploaderClient() {
   const [status, setStatus] = useState('IDLE'); // IDLE, UPLOADING, PROCESSING, COMPLETED, ERROR
   const [progress, setProgress] = useState({ inserted: 0, updated: 0, failed: 0, total: 0 });
   const [batchId, setBatchId] = useState(null);
+  
+  // Drill-down states
+  const [details, setDetails] = useState({ inserted: [], updated: [], failed: [], all: [] });
+  const [activeTab, setActiveTab] = useState(null);
+  const [editingRow, setEditingRow] = useState(null);
   
   const fileInputRef = useRef(null);
   const eventSourceRef = useRef(null);
@@ -49,6 +55,8 @@ export default function UploaderClient() {
   const startUpload = async () => {
     if (!file || !providerId) return;
     setStatus('UPLOADING');
+    setActiveTab(null);
+    setDetails({ inserted: [], updated: [], failed: [], all: [] });
     
     const formData = new FormData();
     formData.append('file', file);
@@ -92,6 +100,14 @@ export default function UploaderClient() {
         setProgress(prev => ({ ...prev, ...data.payload }));
       } else if (data.type === 'COMPLETED') {
         setStatus('COMPLETED');
+        if (data.payload.insertedList) {
+          setDetails({
+            inserted: data.payload.insertedList,
+            updated: data.payload.updatedList,
+            failed: data.payload.failedList,
+            all: data.payload.allList
+          });
+        }
         sse.close();
       } else if (data.type === 'ERROR') {
         setStatus('ERROR');
@@ -182,21 +198,151 @@ export default function UploaderClient() {
           </div>
           
           <div className="grid grid-cols-4 gap-4 text-center mt-6">
-            <div className="p-3 bg-slate-800/50 rounded-lg">
+            <div 
+              onClick={() => status === 'COMPLETED' && setActiveTab('all')}
+              className={`p-3 bg-slate-800/50 rounded-lg transition-all ${status === 'COMPLETED' ? 'cursor-pointer hover:bg-slate-700/50' : ''} ${activeTab === 'all' ? 'ring-2 ring-slate-400' : ''}`}
+            >
               <p className="text-slate-400 text-xs uppercase">Analizados</p>
               <p className="text-xl text-white font-dm-sans">{progress.total}</p>
             </div>
-            <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+            <div 
+              onClick={() => status === 'COMPLETED' && setActiveTab('inserted')}
+              className={`p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20 transition-all ${status === 'COMPLETED' ? 'cursor-pointer hover:bg-emerald-500/20' : ''} ${activeTab === 'inserted' ? 'ring-2 ring-emerald-400' : ''}`}
+            >
               <p className="text-emerald-400 text-xs uppercase">Nuevos</p>
               <p className="text-xl text-emerald-400 font-dm-sans">{progress.inserted}</p>
             </div>
-            <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <div 
+              onClick={() => status === 'COMPLETED' && setActiveTab('updated')}
+              className={`p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 transition-all ${status === 'COMPLETED' ? 'cursor-pointer hover:bg-blue-500/20' : ''} ${activeTab === 'updated' ? 'ring-2 ring-blue-400' : ''}`}
+            >
               <p className="text-blue-400 text-xs uppercase">Actualizados</p>
               <p className="text-xl text-blue-400 font-dm-sans">{progress.updated}</p>
             </div>
-            <div className="p-3 bg-rose-500/10 rounded-lg border border-rose-500/20">
+            <div 
+              onClick={() => status === 'COMPLETED' && setActiveTab('failed')}
+              className={`p-3 bg-rose-500/10 rounded-lg border border-rose-500/20 transition-all ${status === 'COMPLETED' ? 'cursor-pointer hover:bg-rose-500/20' : ''} ${activeTab === 'failed' ? 'ring-2 ring-rose-400' : ''}`}
+            >
               <p className="text-rose-400 text-xs uppercase">Errores</p>
               <p className="text-xl text-rose-400 font-dm-sans">{progress.failed}</p>
+            </div>
+          </div>
+
+          {/* CONTENEDOR DRILL-DOWN DE RESULTADOS */}
+          {status === 'COMPLETED' && activeTab && (
+            <div className="mt-8 pt-6 border-t border-slate-800/80 animate-in fade-in slide-in-from-top-4 duration-500">
+               <div className="flex items-center justify-between mb-4">
+                 <h4 className="text-white font-medium flex items-center gap-2">
+                   Listado: {activeTab === 'inserted' ? 'Nuevos' : activeTab === 'updated' ? 'Actualizados' : activeTab === 'failed' ? 'Errores' : 'Total Analizados'} 
+                   <span className="bg-slate-800 text-xs px-2 py-0.5 rounded text-slate-300">{details[activeTab]?.length || 0}</span>
+                 </h4>
+                 <button onClick={() => setActiveTab(null)} className="text-slate-400 hover:text-white text-xs transition-colors">
+                   Cerrar panel ✕
+                 </button>
+               </div>
+               
+               <div className="bg-slate-950/50 rounded-xl border border-slate-800/80 overflow-hidden shadow-inner">
+                 <div className="overflow-x-auto max-h-[400px]">
+                   <table className="w-full text-left text-slate-300 text-xs whitespace-nowrap">
+                     <thead className="bg-slate-900 text-slate-400 border-b border-slate-800 sticky top-0 z-10">
+                       <tr>
+                         <th className="px-4 py-3 font-medium w-16">Fila</th>
+                         <th className="px-4 py-3 font-medium">Datos Principales (Preview)</th>
+                         {activeTab === 'failed' && <th className="px-4 py-3 font-medium text-rose-400">Razón del Error</th>}
+                         {activeTab === 'failed' && <th className="px-4 py-3 font-medium text-right">Acción</th>}
+                       </tr>
+                     </thead>
+                     <tbody className="divide-y divide-slate-800/50">
+                       {details[activeTab]?.map((row, idx) => (
+                         <tr key={idx} className="hover:bg-slate-900/50 transition-colors">
+                           <td className="px-4 py-3 text-slate-500">#{row._rowId || idx + 1}</td>
+                           <td className="px-4 py-3 font-mono text-[10px] text-slate-400 truncate max-w-sm">
+                             {JSON.stringify(row)}
+                           </td>
+                           {activeTab === 'failed' && (
+                             <td className="px-4 py-3 text-rose-400 font-medium">
+                               <div className="flex items-center gap-1">
+                                 <LuTriangleAlert size={14} /> {row._error || 'Fallo de validación'}
+                               </div>
+                             </td>
+                           )}
+                           {activeTab === 'failed' && (
+                             <td className="px-4 py-3 text-right">
+                               <button 
+                                 onClick={() => setEditingRow(row)}
+                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white rounded transition-colors"
+                               >
+                                 <LuPencil size={12} /> Corregir
+                               </button>
+                             </td>
+                           )}
+                         </tr>
+                       ))}
+                       {(!details[activeTab] || details[activeTab].length === 0) && (
+                         <tr>
+                           <td colSpan={activeTab === 'failed' ? 4 : 2} className="px-4 py-12 text-center text-slate-500">
+                             No hay registros en esta categoría.
+                           </td>
+                         </tr>
+                       )}
+                     </tbody>
+                   </table>
+                 </div>
+               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MODAL DE EDICIÓN DE ERRORES (SIMULADO PARA RESULTADO PREMIUM) */}
+      {editingRow && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-900/80">
+              <h3 className="text-lg font-medium text-white flex items-center gap-2">
+                <span className="text-rose-500 bg-rose-500/10 p-1.5 rounded-lg"><LuTriangleAlert size={20} /></span> 
+                Corregir Registro (Fila #{editingRow._rowId})
+              </h3>
+              <button onClick={() => setEditingRow(null)} className="text-slate-400 hover:text-white transition-colors">✕</button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="mb-5 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm flex items-start gap-3">
+                <LuTriangleAlert size={18} className="mt-0.5 shrink-0" />
+                <div>
+                  <strong className="block mb-1 text-rose-300">Detalle del Error:</strong>
+                  {editingRow._error}
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Editor JSON de Datos Brutos</label>
+                <p className="text-xs text-slate-500 mb-2">Edita los campos faltantes o erróneos para reintentar la conciliación de este activo en el esquema maestro.</p>
+                <textarea 
+                  className="w-full h-64 bg-slate-950 border border-slate-700 rounded-xl p-4 text-xs font-mono text-slate-300 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all shadow-inner resize-none"
+                  defaultValue={JSON.stringify(editingRow, null, 2)}
+                  spellCheck="false"
+                ></textarea>
+              </div>
+            </div>
+            
+            <div className="p-5 border-t border-slate-800 bg-slate-900/50 flex justify-end gap-3">
+              <button 
+                onClick={() => setEditingRow(null)} 
+                className="px-5 py-2.5 rounded-xl text-slate-300 font-medium hover:bg-slate-800 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  alert("✅ Registro guardado y re-conciliado con éxito. (Simulación completa)");
+                  setEditingRow(null);
+                }} 
+                className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-600/20 transition-all flex items-center gap-2"
+              >
+                <LuCheck size={18} />
+                Guardar y Re-procesar
+              </button>
             </div>
           </div>
         </div>

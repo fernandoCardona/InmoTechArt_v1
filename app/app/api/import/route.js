@@ -42,15 +42,30 @@ export async function POST(req) {
       let inserted = 0;
       let updated = 0;
       let failed = 0;
+      
+      let insertedList = [];
+      let updatedList = [];
+      let failedList = [];
 
       for (let i = 0; i < totalRows; i++) {
         // Simulación de carga (retraso intencional para ver el progreso en UI)
-        await new Promise(r => setTimeout(r, 50)); 
+        await new Promise(r => setTimeout(r, 20)); 
+        
+        const row = rawData[i] || { id: i, fila: i };
         
         // Mapeo (Aquí irá la lógica de conciliación del Parser)
-        if (i % 10 === 0) failed++;
-        else if (i % 3 === 0) updated++;
-        else inserted++;
+        if (i % 10 === 0) {
+          failed++;
+          failedList.push({ ...row, _rowId: i + 1, _error: 'Dato requerido faltante o formato inválido (Ej: Referencia Catastral)' });
+        }
+        else if (i % 3 === 0) {
+          updated++;
+          updatedList.push({ ...row, _rowId: i + 1 });
+        }
+        else {
+          inserted++;
+          insertedList.push({ ...row, _rowId: i + 1 });
+        }
 
         // Emitimos progreso vía SSE cada 10 filas o al final
         if (i % 10 === 0 || i === totalRows - 1) {
@@ -64,7 +79,11 @@ export async function POST(req) {
       // Proceso terminado
       importEmitter.emit(`progress_${batchId}`, {
         type: 'COMPLETED',
-        payload: { inserted, updated, failed, total: totalRows }
+        payload: { 
+          inserted, updated, failed, total: totalRows,
+          insertedList, updatedList, failedList,
+          allList: rawData
+        }
       });
       
     }, 100); // Iniciamos 100ms después
