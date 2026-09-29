@@ -17,10 +17,10 @@ export async function GET(req) {
     if (search) {
       const searchTerm = `%${search}%`;
       filters = or(
-        ilike(properties.cadastralReference, searchTerm),
-        ilike(properties.assetCodeProvider, searchTerm),
-        ilike(properties.municipality, searchTerm),
-        ilike(properties.address, searchTerm)
+        ilike(properties.referenciaCatastral, searchTerm),
+        ilike(properties.referenciaProveedor, searchTerm),
+        ilike(properties.municipio, searchTerm),
+        ilike(properties.direccion, searchTerm)
       );
     }
 

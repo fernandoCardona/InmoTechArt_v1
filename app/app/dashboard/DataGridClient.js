@@ -95,38 +95,39 @@ export default function DataGridClient() {
   // Columnas para TanStack Table
   const columns = [
     {
-      accessorKey: 'cadastralReference',
+      accessorKey: 'referenciaCatastral',
       header: 'Catastro',
       cell: info => <span className="font-mono text-slate-300">{info.getValue() || '--'}</span>,
     },
     {
-      accessorKey: 'assetType',
+      accessorKey: 'tipoActivo',
       header: 'Tipo',
       cell: info => <span className="text-slate-300">{info.getValue()}</span>,
     },
     {
-      accessorKey: 'address',
+      accessorKey: 'direccion',
       header: 'Dirección',
       cell: info => <span className="text-slate-400 truncate max-w-[200px] block" title={info.getValue()}>{info.getValue()}</span>,
     },
     {
-      accessorKey: 'municipality',
+      accessorKey: 'municipio',
       header: 'Municipio',
       cell: info => <span className="text-slate-300">{info.getValue()}</span>,
     },
     {
-      accessorKey: 'pricePvp',
+      accessorKey: 'precioVenta',
       header: 'Precio',
       cell: info => <span className="font-dm-sans font-medium text-emerald-400">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(info.getValue())}</span>,
     },
     {
-      accessorKey: 'occupancyStatus',
+      accessorKey: 'faseJudicialOcupacion',
       header: 'Estado',
       cell: info => {
-        const val = info.getValue();
+        const val = info.getValue() || 'DESCONOCIDO';
+        const isFree = val.toUpperCase().includes('LIBRE');
         return (
           <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider border ${
-            val === 'LIBRE' 
+            isFree 
               ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
               : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
           }`}>

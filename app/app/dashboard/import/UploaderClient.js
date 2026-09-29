@@ -250,7 +250,7 @@ export default function UploaderClient() {
                          {/* Render dinámico de columnas tipo Excel (hasta 6) */}
                          {details[activeTab] && details[activeTab].length > 0 && 
                            Object.keys(details[activeTab][0])
-                             .filter(k => !k.startsWith('_'))
+                             .filter(k => !['_rowId', '_error'].includes(k))
                              .slice(0, 6)
                              .map((col, i) => (
                                <th key={i} className="px-4 py-3 font-medium truncate max-w-[150px]" title={col}>
@@ -264,14 +264,15 @@ export default function UploaderClient() {
                      </thead>
                      <tbody className="divide-y divide-slate-800/50">
                        {details[activeTab]?.map((row, idx) => {
-                         const cols = Object.keys(row).filter(k => !k.startsWith('_')).slice(0, 6);
+                         const baseObj = details[activeTab][0] || {};
+                         const cols = Object.keys(baseObj).filter(k => !['_rowId', '_error'].includes(k)).slice(0, 6);
                          return (
                          <tr key={idx} className="hover:bg-slate-900/50 transition-colors">
                            <td className="px-4 py-3 text-slate-500">#{row._rowId || idx + 1}</td>
                            
                            {/* Celdas dinámicas Excel-like */}
                            {cols.map((col, i) => (
-                             <td key={i} className="px-4 py-3 text-slate-400 truncate max-w-[150px]" title={String(row[col])}>
+                             <td key={i} className="px-4 py-3 text-slate-400 truncate max-w-[150px]" title={String(row[col] || '')}>
                                {row[col] !== null && row[col] !== undefined ? String(row[col]) : '-'}
                              </td>
                            ))}
