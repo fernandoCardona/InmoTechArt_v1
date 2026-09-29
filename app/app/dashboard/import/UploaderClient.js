@@ -247,18 +247,34 @@ export default function UploaderClient() {
                      <thead className="bg-slate-900 text-slate-400 border-b border-slate-800 sticky top-0 z-10">
                        <tr>
                          <th className="px-4 py-3 font-medium w-16">Fila</th>
-                         <th className="px-4 py-3 font-medium">Datos Principales (Preview)</th>
+                         {/* Render dinámico de columnas tipo Excel (hasta 6) */}
+                         {details[activeTab] && details[activeTab].length > 0 && 
+                           Object.keys(details[activeTab][0])
+                             .filter(k => !k.startsWith('_'))
+                             .slice(0, 6)
+                             .map((col, i) => (
+                               <th key={i} className="px-4 py-3 font-medium truncate max-w-[150px]" title={col}>
+                                 {col.startsWith('__EMPTY') ? `Columna ${col.split('_').pop()}` : col}
+                               </th>
+                             ))
+                         }
                          {activeTab === 'failed' && <th className="px-4 py-3 font-medium text-rose-400">Razón del Error</th>}
                          {activeTab === 'failed' && <th className="px-4 py-3 font-medium text-right">Acción</th>}
                        </tr>
                      </thead>
                      <tbody className="divide-y divide-slate-800/50">
-                       {details[activeTab]?.map((row, idx) => (
+                       {details[activeTab]?.map((row, idx) => {
+                         const cols = Object.keys(row).filter(k => !k.startsWith('_')).slice(0, 6);
+                         return (
                          <tr key={idx} className="hover:bg-slate-900/50 transition-colors">
                            <td className="px-4 py-3 text-slate-500">#{row._rowId || idx + 1}</td>
-                           <td className="px-4 py-3 font-mono text-[10px] text-slate-400 truncate max-w-sm">
-                             {JSON.stringify(row)}
-                           </td>
+                           
+                           {/* Celdas dinámicas Excel-like */}
+                           {cols.map((col, i) => (
+                             <td key={i} className="px-4 py-3 text-slate-400 truncate max-w-[150px]" title={String(row[col])}>
+                               {row[col] !== null && row[col] !== undefined ? String(row[col]) : '-'}
+                             </td>
+                           ))}
                            {activeTab === 'failed' && (
                              <td className="px-4 py-3 text-rose-400 font-medium">
                                <div className="flex items-center gap-1">
@@ -277,7 +293,8 @@ export default function UploaderClient() {
                              </td>
                            )}
                          </tr>
-                       ))}
+                         );
+                       })}
                        {(!details[activeTab] || details[activeTab].length === 0) && (
                          <tr>
                            <td colSpan={activeTab === 'failed' ? 4 : 2} className="px-4 py-12 text-center text-slate-500">
