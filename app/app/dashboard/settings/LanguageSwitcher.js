@@ -24,7 +24,7 @@ export default function LanguageSwitcher({ currentLocale }) {
           <LuGlobe size={20} />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-slate-200">Preferencias de Idioma / Preferències d'Idioma</h3>
+          <h3 className="text-lg font-semibold text-slate-200">Preferencias de Idioma / Preferències d&apos;Idioma</h3>
           <p className="text-xs text-slate-400">Selecciona el idioma por defecto para tu interfaz (ES/CA).</p>
         </div>
       </div>

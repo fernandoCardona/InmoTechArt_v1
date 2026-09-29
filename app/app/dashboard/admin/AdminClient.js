@@ -43,7 +43,10 @@ export default function AdminClient() {
   };
 
   useEffect(() => {
-    fetchAdminData();
+    const init = async () => {
+      await fetchAdminData();
+    };
+    init();
   }, []);
 
   const handleCreateUser = async (e) => {
@@ -205,7 +208,7 @@ export default function AdminClient() {
                   </div>
                   <div>
                     <p className="text-sm text-emerald-400 font-medium truncate">
-                      "{item.searchQuery}"
+                      &quot;{item.searchQuery}&quot;
                     </p>
                     <p className="text-[10px] text-slate-500 mt-1">
                       Realizada por: <span className="text-slate-300">{item.userName} ({item.userEmail})</span>

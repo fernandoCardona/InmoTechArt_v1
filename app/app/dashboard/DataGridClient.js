@@ -50,7 +50,10 @@ export default function DataGridClient() {
   };
 
   useEffect(() => {
-    fetchHistory();
+    const init = async () => {
+      await fetchHistory();
+    };
+    init();
   }, []);
 
   // Efecto para ocultar el historial si clico fuera
@@ -71,6 +74,7 @@ export default function DataGridClient() {
       fetchData();
     }, 300);
     return () => clearTimeout(delayDebounceFn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, pageSize, globalFilter]);
 
   const handleKeyDown = async (e) => {

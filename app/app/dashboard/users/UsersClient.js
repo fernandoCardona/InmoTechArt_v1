@@ -30,7 +30,10 @@ export default function UsersClient() {
   };
 
   useEffect(() => {
-    fetchUsers();
+    const init = async () => {
+      await fetchUsers();
+    };
+    init();
   }, []);
 
   const handleCreateUser = async (e) => {
