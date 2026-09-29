@@ -29,7 +29,7 @@ export default async function DashboardLayout({ children }) {
         {/* Decorative background glow */}
         <div className="absolute top-0 left-1/4 h-[300px] w-[600px] rounded-full bg-violet-600/10 blur-[120px] pointer-events-none" />
         
-        <div className="max-w-7xl mx-auto p-6 md:p-10 relative z-10">
+        <div className="w-full h-full px-4 md:px-6 py-6 md:py-8 relative z-10">
           {children}
         </div>
       </main>

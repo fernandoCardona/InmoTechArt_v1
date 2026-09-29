@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '../../../lib/db';
-import { properties } from '../../../db/schema';
-import { ilike, or, and, desc, sql } from 'drizzle-orm';
+import { properties, providers } from '../../../db/schema';
+import { ilike, or, and, desc, sql, eq } from 'drizzle-orm';
 
 export async function GET(req) {
   try {
@@ -24,14 +24,21 @@ export async function GET(req) {
       );
     }
 
-    // Consulta de datos
-    const data = await db
+    // Consulta de datos con JOIN a providers
+    const rawData = await db
       .select()
       .from(properties)
+      .leftJoin(providers, eq(properties.providerId, providers.id))
       .where(filters)
       .limit(limit)
       .offset(offset)
       .orderBy(desc(properties.createdAt));
+
+    // Aplanar el resultado para mantener retrocompatibilidad con la UI
+    const data = rawData.map(row => ({
+      ...row.properties,
+      providerName: row.providers?.name || 'Desconocido',
+    }));
 
     // Contador total optimizado
     const countResult = await db

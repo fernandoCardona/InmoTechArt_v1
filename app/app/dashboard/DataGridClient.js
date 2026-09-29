@@ -99,6 +99,26 @@ export default function DataGridClient() {
   // Columnas para TanStack Table
   const columns = [
     {
+      accessorKey: 'providerId',
+      header: 'Provider UUID',
+      cell: info => <span className="text-slate-500 font-mono text-[9px] truncate max-w-[80px] block" title={info.getValue()}>{info.getValue() || '--'}</span>,
+    },
+    {
+      accessorKey: 'providerName',
+      header: 'Proveedor',
+      cell: info => <span className="text-emerald-400 font-semibold text-xs tracking-wide uppercase">{info.getValue() || '--'}</span>,
+    },
+    {
+      accessorKey: 'createdAt',
+      header: 'Creado',
+      cell: info => <span className="text-slate-400 text-[10px]">{info.getValue() ? new Date(info.getValue()).toLocaleDateString() : '--'}</span>,
+    },
+    {
+      accessorKey: 'updatedAt',
+      header: 'Actualizado',
+      cell: info => <span className="text-slate-400 text-[10px]">{info.getValue() ? new Date(info.getValue()).toLocaleDateString() : '--'}</span>,
+    },
+    {
       accessorKey: 'referenciaCatastral',
       header: 'Catastro',
       cell: info => <span className="font-mono text-slate-300">{info.getValue() || '--'}</span>,
