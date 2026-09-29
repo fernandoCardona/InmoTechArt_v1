@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '../../../lib/db';
-import { importBatches } from '../../../db/schema';
+import { importBatches, properties } from '../../../db/schema';
+import { sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import * as xlsx from 'xlsx';
 import { EventEmitter } from 'events';
@@ -47,34 +48,116 @@ export async function POST(req) {
       let updatedList = [];
       let failedList = [];
 
+      // 3. Crear el Import Batch en DB
+      const [batch] = await db.insert(importBatches).values({
+        id: batchId,
+        providerId,
+        fileName,
+        status: 'PROCESSING'
+      }).returning();
+
       for (let i = 0; i < totalRows; i++) {
-        // Simulación de carga (retraso intencional para ver el progreso en UI)
-        await new Promise(r => setTimeout(r, 20)); 
+        const row = rawData[i];
         
-        const row = rawData[i] || { id: i, fila: i };
-        
-        // Mapeo (Aquí irá la lógica de conciliación del Parser)
-        if (i % 10 === 0) {
+        try {
+          // Normalizar las llaves del objeto (pasar a minúsculas para encontrar sin fallos)
+          const keys = Object.keys(row);
+          const getVal = (...keywords) => {
+            const match = keys.find(k => keywords.some(kw => k.toLowerCase().includes(kw.toLowerCase())));
+            return match ? row[match] : null;
+          };
+
+          const refProveedor = getVal('REO', 'referencia proveedor', 'id inmueble', 'id wantoku', 'referencia');
+          const refCatastral = getVal('catastral', 'catastro');
+          const provincia = getVal('provincia');
+          const municipio = getVal('municipio', 'poblacion', 'localidad');
+          const direccion = getVal('direccion', 'calle', 'domicilio');
+          const cp = getVal('codigo postal', 'cp', 'c.p.');
+          const tipo = getVal('tipo activo', 'tipo inmueble', 'tipologia');
+          const precioRaw = getVal('precio', 'pvp', 'importe');
+          const fase = getVal('fase judicial', 'estado posesorio', 'ocupacion', 'estado comercial');
+
+          // Validar campos obligatorios mínimos
+          if (!provincia || !municipio) {
+            throw new Error('Faltan campos obligatorios: Provincia o Municipio.');
+          }
+
+          // Parsear precio
+          let precio = 0;
+          if (precioRaw) {
+            precio = parseFloat(String(precioRaw).replace(/[^0-9,-]/g, '').replace(',', '.'));
+            if (isNaN(precio)) precio = 0;
+          }
+
+          const mappedData = {
+            providerId,
+            referenciaProveedor: refProveedor ? String(refProveedor).substring(0, 100) : null,
+            referenciaCatastral: refCatastral ? String(refCatastral).substring(0, 50) : null,
+            fincasRegistrales: getVal('finca registral', 'fincas') ? String(getVal('finca registral', 'fincas')).substring(0, 100) : null,
+            ccaa: getVal('ccaa', 'comunidad') ? String(getVal('ccaa', 'comunidad')).substring(0, 100) : null,
+            provincia: String(provincia).substring(0, 100),
+            municipio: String(municipio).substring(0, 150),
+            direccion: direccion ? String(direccion).substring(0, 255) : null,
+            codigoPostal: cp ? String(cp).substring(0, 10) : null,
+            tipoActivo: tipo ? String(tipo).substring(0, 100) : null,
+            subtipoTipologia: getVal('subtipo') ? String(getVal('subtipo')).substring(0, 100) : null,
+            usoUrbanistico: getVal('uso') ? String(getVal('uso')).substring(0, 100) : null,
+            clasificacionSuelo: getVal('clasificacion suelo', 'clase suelo') ? String(getVal('clasificacion suelo')).substring(0, 100) : null,
+            precioVenta: precio.toString(),
+            porcentajeParticipacion: getVal('%', 'participacion') ? String(getVal('%', 'participacion')).substring(0, 50) : null,
+            modalidadComercial: getVal('modalidad') ? String(getVal('modalidad')).substring(0, 100) : null,
+            faseJudicialOcupacion: fase ? String(fase).substring(0, 150) : null,
+            superficieSueloM2: getVal('superficie parcela', 'sup. parcela') ? parseFloat(getVal('superficie parcela')) || null : null,
+            edificabilidadSobreRasanteM2: getVal('sobre rasante', 'sr') ? parseFloat(getVal('sobre rasante')) || null : null,
+            edificabilidadBajoRasanteM2: getVal('bajo rasante', 'br') ? parseFloat(getVal('bajo rasante')) || null : null,
+            numViviendas: getVal('nº viv', 'num viv', 'unidades') ? parseInt(getVal('nº viv')) || null : null,
+            rawMetadata: row,
+            lastSeenInBatchId: batch.id,
+          };
+
+          // Comprobar si ya existe usando la referenciaCatastral o referenciaProveedor (Upsert manual)
+          let existingProp = null;
+          if (mappedData.referenciaCatastral) {
+            existingProp = await db.select().from(properties).where(sql`${properties.referenciaCatastral} = ${mappedData.referenciaCatastral} AND ${properties.providerId} = ${providerId}`).limit(1);
+          } else if (mappedData.referenciaProveedor) {
+            existingProp = await db.select().from(properties).where(sql`${properties.referenciaProveedor} = ${mappedData.referenciaProveedor} AND ${properties.providerId} = ${providerId}`).limit(1);
+          }
+
+          if (existingProp && existingProp.length > 0) {
+            // Update
+            await db.update(properties).set({ ...mappedData, updatedAt: new Date() }).where(sql`${properties.id} = ${existingProp[0].id}`);
+            updated++;
+            updatedList.push({ ...row, _rowId: i + 1, _status: 'UPDATED' });
+          } else {
+            // Insert
+            await db.insert(properties).values(mappedData);
+            inserted++;
+            insertedList.push({ ...row, _rowId: i + 1, _status: 'INSERTED' });
+          }
+
+        } catch (rowErr) {
           failed++;
-          failedList.push({ ...row, _rowId: i + 1, _error: 'Dato requerido faltante o formato inválido (Ej: Referencia Catastral)' });
-        }
-        else if (i % 3 === 0) {
-          updated++;
-          updatedList.push({ ...row, _rowId: i + 1 });
-        }
-        else {
-          inserted++;
-          insertedList.push({ ...row, _rowId: i + 1 });
+          failedList.push({ ...row, _rowId: i + 1, _error: rowErr.message });
         }
 
-        // Emitimos progreso vía SSE cada 10 filas o al final
-        if (i % 10 === 0 || i === totalRows - 1) {
+        // Emitimos progreso vía SSE cada 50 filas o al final
+        if (i % 50 === 0 || i === totalRows - 1) {
           importEmitter.emit(`progress_${batchId}`, {
             type: 'PROGRESS',
             payload: { inserted, updated, failed, total: totalRows }
           });
         }
       }
+
+      // Actualizar el batch
+      await db.update(importBatches).set({
+        recordsReceived: totalRows,
+        recordsInserted: inserted,
+        recordsUpdated: updated,
+        recordsFailed: failed,
+        status: 'COMPLETED',
+        finishedAt: new Date()
+      }).where(sql`${importBatches.id} = ${batch.id}`);
 
       // Proceso terminado
       importEmitter.emit(`progress_${batchId}`, {
