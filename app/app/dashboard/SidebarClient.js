@@ -16,7 +16,8 @@ import {
   LuHistory,
   LuSearch,
   LuChevronDown,
-  LuUsers
+  LuUsers,
+  LuBuilding2
 } from 'react-icons/lu';
 import { logout } from '../../lib/actions';
 import { getMySearchHistory } from '../../lib/search-actions';
@@ -194,39 +195,75 @@ export default function SidebarClient({ t, userRole }) {
       <div className="p-3 border-t border-slate-800/50 mb-2 space-y-1">
         
         {userRole === 'SUPERADMIN' && (
-          <Link 
-            href="/dashboard/users"
-            className={`relative w-full flex items-center px-3 py-3 rounded-xl transition-all duration-300 group ${
-              pathname === '/dashboard/users'
-                ? 'bg-amber-500/10 text-amber-400' 
-                : 'text-slate-500 hover:bg-slate-800/50 hover:text-white'
-            }`}
-          >
-            {pathname === '/dashboard/users' && (
-              <motion.div 
-                layoutId="active-nav-glow-footer-users"
-                className="absolute inset-0 bg-amber-500/10 rounded-xl border border-amber-500/20"
-                initial={false}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              />
-            )}
-            <div className="relative z-10 flex items-center w-full">
-              <LuUsers size={20} className="flex-shrink-0 group-hover:text-amber-400 transition-colors" />
-              <AnimatePresence>
-                {!isCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="ml-4 text-sm font-medium whitespace-nowrap overflow-hidden"
-                  >
-                    Usuarios
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </div>
-          </Link>
+          <>
+            <Link 
+              href="/dashboard/providers"
+              className={`relative w-full flex items-center px-3 py-3 rounded-xl transition-all duration-300 group ${
+                pathname === '/dashboard/providers'
+                  ? 'bg-amber-500/10 text-amber-400' 
+                  : 'text-slate-500 hover:bg-slate-800/50 hover:text-white'
+              }`}
+            >
+              {pathname === '/dashboard/providers' && (
+                <motion.div 
+                  layoutId="active-nav-glow-footer-providers"
+                  className="absolute inset-0 bg-amber-500/10 rounded-xl border border-amber-500/20"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                />
+              )}
+              <div className="relative z-10 flex items-center w-full">
+                <LuBuilding2 size={20} className="flex-shrink-0 group-hover:text-amber-400 transition-colors" />
+                <AnimatePresence>
+                  {!isCollapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="ml-4 text-sm font-medium whitespace-nowrap overflow-hidden"
+                    >
+                      Proveedores
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </div>
+            </Link>
+
+            <Link 
+              href="/dashboard/users"
+              className={`relative w-full flex items-center px-3 py-3 rounded-xl transition-all duration-300 group ${
+                pathname === '/dashboard/users'
+                  ? 'bg-amber-500/10 text-amber-400' 
+                  : 'text-slate-500 hover:bg-slate-800/50 hover:text-white'
+              }`}
+            >
+              {pathname === '/dashboard/users' && (
+                <motion.div 
+                  layoutId="active-nav-glow-footer-users"
+                  className="absolute inset-0 bg-amber-500/10 rounded-xl border border-amber-500/20"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                />
+              )}
+              <div className="relative z-10 flex items-center w-full">
+                <LuUsers size={20} className="flex-shrink-0 group-hover:text-amber-400 transition-colors" />
+                <AnimatePresence>
+                  {!isCollapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="ml-4 text-sm font-medium whitespace-nowrap overflow-hidden"
+                    >
+                      Usuarios
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </div>
+            </Link>
+          </>
         )}
 
         <Link 

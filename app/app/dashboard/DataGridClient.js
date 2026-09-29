@@ -104,33 +104,53 @@ export default function DataGridClient() {
       cell: info => <span className="font-mono text-slate-300">{info.getValue() || '--'}</span>,
     },
     {
+      accessorKey: 'fincasRegistrales',
+      header: 'Fincas',
+      cell: info => <span className="text-slate-400 font-mono text-[11px] truncate max-w-[120px] block" title={info.getValue()}>{info.getValue() || '--'}</span>,
+    },
+    {
       accessorKey: 'tipoActivo',
       header: 'Tipo',
-      cell: info => <span className="text-slate-300">{info.getValue()}</span>,
+      cell: info => <span className="text-slate-300">{info.getValue() || '--'}</span>,
+    },
+    {
+      accessorKey: 'usoUrbanistico',
+      header: 'Uso',
+      cell: info => <span className="text-slate-400 text-xs">{info.getValue() || '--'}</span>,
     },
     {
       accessorKey: 'direccion',
       header: 'Dirección',
-      cell: info => <span className="text-slate-400 truncate max-w-[200px] block" title={info.getValue()}>{info.getValue()}</span>,
+      cell: info => <span className="text-slate-400 truncate max-w-[180px] block" title={info.getValue()}>{info.getValue() || '--'}</span>,
     },
     {
       accessorKey: 'municipio',
       header: 'Municipio',
-      cell: info => <span className="text-slate-300">{info.getValue()}</span>,
+      cell: info => <span className="text-slate-300">{info.getValue() || '--'}</span>,
+    },
+    {
+      accessorKey: 'modalidadComercial',
+      header: 'Modalidad',
+      cell: info => <span className="text-slate-400 text-xs">{info.getValue() || '--'}</span>,
+    },
+    {
+      accessorKey: 'superficieSueloM2',
+      header: 'Superficie',
+      cell: info => <span className="text-slate-300 text-xs">{info.getValue() ? `${info.getValue()} m²` : '--'}</span>,
     },
     {
       accessorKey: 'precioVenta',
       header: 'Precio',
-      cell: info => <span className="font-dm-sans font-medium text-emerald-400">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(info.getValue())}</span>,
+      cell: info => <span className="font-dm-sans font-medium text-emerald-400">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(info.getValue() || 0)}</span>,
     },
     {
       accessorKey: 'faseJudicialOcupacion',
-      header: 'Estado',
+      header: 'Estado Posesorio',
       cell: info => {
         const val = info.getValue() || 'DESCONOCIDO';
         const isFree = val.toUpperCase().includes('LIBRE');
         return (
-          <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider border ${
+          <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-medium uppercase tracking-wider border ${
             isFree 
               ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
               : 'bg-rose-500/10 text-rose-400 border-rose-500/20'

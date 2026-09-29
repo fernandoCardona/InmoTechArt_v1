@@ -6,7 +6,8 @@ import { LuCheck, LuPencil, LuTriangleAlert } from 'react-icons/lu';
 export default function UploaderClient() {
   const [file, setFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [providerId, setProviderId] = useState(''); // Mapeo ficticio para UI inicial
+  const [providerId, setProviderId] = useState(''); 
+  const [providers, setProviders] = useState([]);
   const [status, setStatus] = useState('IDLE'); // IDLE, UPLOADING, PROCESSING, COMPLETED, ERROR
   const [progress, setProgress] = useState({ inserted: 0, updated: 0, failed: 0, total: 0 });
   const [batchId, setBatchId] = useState(null);
@@ -18,6 +19,22 @@ export default function UploaderClient() {
   
   const fileInputRef = useRef(null);
   const eventSourceRef = useRef(null);
+
+  // Cargar Proveedores Activos
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const res = await fetch('/api/providers');
+        const json = await res.json();
+        if (json.success) {
+          setProviders(json.data.filter(p => p.isActive));
+        }
+      } catch (err) {
+        console.error('Error fetching providers:', err);
+      }
+    };
+    init();
+  }, []);
 
   // Limpiar EventSource al desmontar
   useEffect(() => {
@@ -136,8 +153,11 @@ export default function UploaderClient() {
           className="w-full md:w-1/2 px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700/50 text-slate-200 outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500"
         >
           <option value="" disabled>-- Elige un origen de datos --</option>
-          <option value="test-uuid-prinex">SABADELL (Prinex)</option>
-          <option value="test-uuid-welcome">CERBERUS (Welcome)</option>
+          {providers.length === 0 ? (
+            <option value="" disabled>Cargando proveedores...</option>
+          ) : providers.map(p => (
+            <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+          ))}
         </select>
       </div>
 
