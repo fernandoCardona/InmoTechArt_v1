@@ -273,3 +273,55 @@ VALUES (
 --   5. Accede con email: admin@neretxaus.local
 --   6. Cambia la contraseña INMEDIATAMENTE desde el panel de admin.
 --   7. Vuelve a comentar el INSERT (o elimínalo) para evitar re-ejecuciones.
+
+-- ============================================================
+-- SUPERADMIN USER SEED (Persistente)
+-- ============================================================
+INSERT INTO app_core.users (id, email, password_hash, full_name, role, locale, is_active)
+VALUES (
+  '00000000-0000-0000-0000-000000000001',
+  'fernandocardonatoro@gmail.com',
+  '$2b$10$C5xyqbzhwjNZjkVTpvQD..W1mgGGyLd9Cy/Ym4qF68Nrku5SO3Ly6',
+  'Fernando Cardona',
+  'SUPERADMIN',
+  'es',
+  true
+) ON CONFLICT (email) DO NOTHING;
+
+CREATE TABLE "app_core"."asset_matches" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"client_id" uuid NOT NULL,
+	"property_id" uuid NOT NULL,
+	"match_score" integer,
+	"match_reason" text,
+	"status" varchar(50) DEFAULT 'SUGGESTED',
+	"is_new" boolean DEFAULT true,
+	"created_at" timestamp with time zone DEFAULT now()
+);
+--> statement-breakpoint
+CREATE TABLE "app_core"."client_search_profiles" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"client_id" uuid NOT NULL,
+	"provincia" varchar(100),
+	"tipo_activo" varchar(100),
+	"presupuesto_maximo" numeric(12, 2),
+	"descripcion_ia" text,
+	"created_at" timestamp with time zone DEFAULT now()
+);
+--> statement-breakpoint
+CREATE TABLE "app_core"."clients" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"agent_id" uuid NOT NULL,
+	"first_name" varchar(100) NOT NULL,
+	"last_name" varchar(150) NOT NULL,
+	"email" varchar(255) NOT NULL,
+	"phone" varchar(50),
+	"notes" text,
+	"is_active" boolean DEFAULT true,
+	"created_at" timestamp with time zone DEFAULT now()
+);
+--> statement-breakpoint
+ALTER TABLE "app_core"."asset_matches" ADD CONSTRAINT "asset_matches_client_id_clients_id_fk" FOREIGN KEY ("client_id") REFERENCES "app_core"."clients"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "app_core"."asset_matches" ADD CONSTRAINT "asset_matches_property_id_properties_id_fk" FOREIGN KEY ("property_id") REFERENCES "assets"."properties"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "app_core"."client_search_profiles" ADD CONSTRAINT "client_search_profiles_client_id_clients_id_fk" FOREIGN KEY ("client_id") REFERENCES "app_core"."clients"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "app_core"."clients" ADD CONSTRAINT "clients_agent_id_users_id_fk" FOREIGN KEY ("agent_id") REFERENCES "app_core"."users"("id") ON DELETE no action ON UPDATE no action;

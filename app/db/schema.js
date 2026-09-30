@@ -140,3 +140,40 @@ export const properties = assetsSchema.table('properties', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+
+// ============================================================
+// CRM & MATCHING SCHEMA
+// ============================================================
+
+export const clients = appCore.table('clients', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  agentId: uuid('agent_id').references(() => users.id).notNull(),
+  firstName: varchar('first_name', { length: 100 }).notNull(),
+  lastName: varchar('last_name', { length: 150 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  phone: varchar('phone', { length: 50 }),
+  notes: text('notes'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export const clientSearchProfiles = appCore.table('client_search_profiles', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  clientId: uuid('client_id').references(() => clients.id).notNull(),
+  provincia: varchar('provincia', { length: 100 }), 
+  tipoActivo: varchar('tipo_activo', { length: 100 }),
+  presupuestoMaximo: numeric('presupuesto_maximo', { precision: 12, scale: 2 }),
+  descripcionIA: text('descripcion_ia'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+export const assetMatches = appCore.table('asset_matches', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  clientId: uuid('client_id').references(() => clients.id).notNull(),
+  propertyId: uuid('property_id').references(() => properties.id).notNull(),
+  matchScore: integer('match_score'), 
+  matchReason: text('match_reason'),
+  status: varchar('status', { length: 50 }).default('SUGGESTED'),
+  isNew: boolean('is_new').default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});

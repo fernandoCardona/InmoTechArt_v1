@@ -1,0 +1,87 @@
+{
+  "name": "Neretxaus - 1. Importador IA y Conciliador",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "import",
+        "options": {}
+      },
+      "id": "e2d0f5c0-1c0b-46a4-9df7-7170e5b15852",
+      "name": "Webhook (Recibe Excel)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 250, 300 ],
+      "webhookId": "import-webhook-id"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.body.filePath }}"
+      },
+      "id": "8cf552a4-f6b0-4d51-8b2b-5bdf8e983cfb",
+      "name": "Leer Fichero",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [ 450, 300 ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "1d8b6ec2-f155-46f4-a212-32a74c1064db",
+      "name": "Parsear CSV/Excel",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 1,
+      "position": [ 650, 300 ]
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:7b-instruct",
+        "prompt": "Eres un experto inmobiliario. Analiza las cabeceras de este JSON y mapealas a nuestra BD (referencia_catastral, provincia, municipio, precio_venta).",
+        "jsonOutput": true
+      },
+      "id": "f5a6b72a-6052-4cf0-8809-5b4d6b6a38cb",
+      "name": "Ollama (Mapeo IA)",
+      "type": "n8n-nodes-base.ollama",
+      "typeVersion": 1,
+      "position": [ 850, 300 ]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": "assets",
+        "table": "properties",
+        "columns": "referencia_catastral,provincia,municipio,precio_venta,provider_id,raw_metadata",
+        "upsertKey": "referencia_catastral"
+      },
+      "id": "9ca15b88-15a0-4f81-a67b-12d45c1157f1",
+      "name": "Upsert PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [ 1050, 300 ]
+    }
+  ],
+  "connections": {
+    "Webhook (Recibe Excel)": {
+      "main": [
+        [ { "node": "Leer Fichero", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Leer Fichero": {
+      "main": [
+        [ { "node": "Parsear CSV/Excel", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Parsear CSV/Excel": {
+      "main": [
+        [ { "node": "Ollama (Mapeo IA)", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Ollama (Mapeo IA)": {
+      "main": [
+        [ { "node": "Upsert PostgreSQL", "type": "main", "index": 0 } ]
+      ]
+    }
+  },
+  "active": true
+}

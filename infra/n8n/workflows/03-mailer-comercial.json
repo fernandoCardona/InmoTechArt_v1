@@ -1,0 +1,88 @@
+{
+  "name": "Neretxaus - 3. Mailer Comercial Inteligente",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-match",
+        "options": {}
+      },
+      "id": "e0d0f5c0-1c0b-46a4-9df7-7170e5b15852",
+      "name": "Webhook (Recibe Trigger)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 200, 300 ],
+      "webhookId": "send-match-webhook-id"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT c.first_name, c.email, p.referencia_catastral, p.provincia, p.precio_venta, p.tipo_activo, m.match_reason \nFROM app_core.asset_matches m\nJOIN app_core.clients c ON m.client_id = c.id\nJOIN assets.properties p ON m.property_id = p.id\nWHERE m.id = '{{ $json.body.matchId }}';"
+      },
+      "id": "2db4c6a9-8df0-4b36-9b51-518db671a5aa",
+      "name": "Obtener Datos Combinados (DB)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [ 400, 300 ]
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:7b-instruct",
+        "prompt": "=Eres un asesor comercial inmobiliario premium. Redacta un correo corto, elegante y muy persuasivo dirigido a {{ $json.first_name }}, presentándole esta propiedad ({{ $json.tipo_activo }} en {{ $json.provincia }} por {{ $json.precio_venta }}€). \n\nUtiliza esta razón sugerida por la IA: \"{{ $json.match_reason }}\". \n\nDevuelve solo el cuerpo del correo en HTML, estructurado para enviar por email.",
+        "jsonOutput": false
+      },
+      "id": "893c5d88-ec94-4d1a-be87-512c1e48e899",
+      "name": "Ollama (Generar Email HTML)",
+      "type": "n8n-nodes-base.ollama",
+      "typeVersion": 1,
+      "position": [ 600, 300 ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "asesor@neretxaus.com",
+        "toEmail": "={{ $('Obtener Datos Combinados (DB)').item.json.email }}",
+        "subject": "=Sugerencia Inmobiliaria Premium para ti, {{ $('Obtener Datos Combinados (DB)').item.json.first_name }}",
+        "html": "={{ $json.response }}"
+      },
+      "id": "9ca15b88-15a0-4f81-a67b-12d45c1157f2",
+      "name": "Enviar Correo (SMTP)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [ 800, 300 ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE app_core.asset_matches SET status = 'SENT' WHERE id = '{{ $('Webhook (Recibe Trigger)').item.json.body.matchId }}';"
+      },
+      "id": "2db4c6a9-8df0-4b36-9b51-518db671a5ab",
+      "name": "Marcar como Enviado (DB)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [ 1000, 300 ]
+    }
+  ],
+  "connections": {
+    "Webhook (Recibe Trigger)": {
+      "main": [
+        [ { "node": "Obtener Datos Combinados (DB)", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Obtener Datos Combinados (DB)": {
+      "main": [
+        [ { "node": "Ollama (Generar Email HTML)", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Ollama (Generar Email HTML)": {
+      "main": [
+        [ { "node": "Enviar Correo (SMTP)", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Enviar Correo (SMTP)": {
+      "main": [
+        [ { "node": "Marcar como Enviado (DB)", "type": "main", "index": 0 } ]
+      ]
+    }
+  },
+  "active": true
+}

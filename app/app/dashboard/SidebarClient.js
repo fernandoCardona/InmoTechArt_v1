@@ -43,6 +43,7 @@ export default function SidebarClient({ t, userRole }) {
   // Filtrar los elementos por rol
   const allMenuItems = [
     { href: '/dashboard', icon: LuLayoutDashboard, label: t.overview, roles: ['SUPERADMIN', 'ADMIN', 'AGENT', 'READONLY'] },
+    { href: '/dashboard/clients', icon: LuUsers, label: 'Mis Clientes', roles: ['SUPERADMIN', 'ADMIN', 'AGENT'] },
     { href: '/dashboard/import', icon: LuUpload, label: t.import, roles: ['SUPERADMIN', 'ADMIN', 'AGENT'] },
     { href: '/dashboard/ai', icon: LuBot, label: t.rag, roles: ['SUPERADMIN', 'ADMIN', 'AGENT', 'READONLY'] },
     { href: '/dashboard/admin', icon: LuShieldCheck, label: t.admin, roles: ['SUPERADMIN'] },

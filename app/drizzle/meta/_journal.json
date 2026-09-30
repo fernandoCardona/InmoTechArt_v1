@@ -8,6 +8,13 @@
       "when": 1790681113139,
       "tag": "0000_slimy_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790775572410,
+      "tag": "0001_huge_scarlet_witch",
+      "breakpoints": true
     }
   ]
 }
