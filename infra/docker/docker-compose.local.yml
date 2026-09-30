@@ -18,7 +18,6 @@ volumes:
   qdrant_data:
   n8n_data:
   ollama_models:
-  shared_imports:
 
 services:
 
@@ -106,9 +105,11 @@ services:
       - DB_POSTGRESDB_USER=${POSTGRES_USER}
       - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_POSTGRESDB_SCHEMA=n8n_flow
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS_DIRS=/home/node/.n8n/imports
     volumes:
       - n8n_data:/home/node/.n8n
-      - shared_imports:/data/imports
+      - ./shared_imports:/home/node/.n8n/imports
     ports:
       - "5679:5678"   # HOST:CONTAINER
     networks:

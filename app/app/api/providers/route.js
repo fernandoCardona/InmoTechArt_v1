@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { decrypt } from '../../../lib/auth';
 import { db } from '../../../lib/db';
 import { providers } from '../../../db/schema';
-import { desc } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 async function checkSuperAdmin() {
   const cookieStore = await cookies();
@@ -57,5 +57,45 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Ya existe un proveedor con ese nombre o código.' }, { status: 400 });
     }
     return NextResponse.json({ error: 'Error del servidor al crear proveedor.' }, { status: 500 });
+  }
+}
+
+export async function PUT(req) {
+  try {
+    const isSuperAdmin = await checkSuperAdmin();
+    if (!isSuperAdmin) {
+      return NextResponse.json({ error: 'Acceso Denegado. Se requiere rol SUPERADMIN.' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { id, name, code, contactEmail, notes, isActive } = body;
+
+    if (!id || !name || !code) {
+      return NextResponse.json({ error: 'ID, nombre y código son obligatorios.' }, { status: 400 });
+    }
+
+    const updatedProvider = await db.update(providers)
+      .set({
+        name,
+        code: code.toUpperCase(),
+        contactEmail,
+        notes,
+        isActive,
+        updatedAt: new Date()
+      })
+      .where(eq(providers.id, id))
+      .returning();
+
+    if (updatedProvider.length === 0) {
+      return NextResponse.json({ error: 'Proveedor no encontrado.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, data: updatedProvider[0] });
+  } catch (error) {
+    console.error('Error updating provider:', error);
+    if (error.code === '23505') {
+      return NextResponse.json({ error: 'Ya existe un proveedor con ese nombre o código.' }, { status: 400 });
+    }
+    return NextResponse.json({ error: 'Error del servidor al actualizar proveedor.' }, { status: 500 });
   }
 }

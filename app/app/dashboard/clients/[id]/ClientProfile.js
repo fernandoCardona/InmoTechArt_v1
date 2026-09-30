@@ -18,7 +18,7 @@ export default function ClientProfile({ clientData, searchProfile, matches }) {
     setSendingMatchId(matchId);
     try {
       // Simulación o llamada real a n8n
-      await fetch('/api/import', { // Reutilizamos un endpoint o creamos uno nuevo, aquí es pseudocódigo hasta crear la ruta real
+      await fetch('/api/matches/send', { // Reutilizamos un endpoint o creamos uno nuevo, aquí es pseudocódigo hasta crear la ruta real
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ matchId })

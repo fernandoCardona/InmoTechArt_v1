@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { flexRender, createCoreRowModel, useTable } from '@tanstack/react-table';
 import { Search, ChevronLeft, ChevronRight, MoreHorizontal, Clock } from 'lucide-react';
 import PropertyDrawer from './PropertyDrawer';
 import { saveSearchQuery, getMySearchHistory } from '../../lib/search-actions';
 
 export default function DataGridClient() {
+  const searchParams = useSearchParams();
+  const providerId = searchParams.get('providerId');
   const [data, setData] = useState([]);
   const [metadata, setMetadata] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,7 +32,7 @@ export default function DataGridClient() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/properties?page=${pageIndex}&limit=${pageSize}&search=${encodeURIComponent(globalFilter)}`);
+      const res = await fetch(`/api/properties?page=${pageIndex}&limit=${pageSize}&search=${encodeURIComponent(globalFilter)}${providerId ? `&providerId=${providerId}` : ''}`);
       const json = await res.json();
       if (json.data) {
         setData(json.data);
@@ -119,32 +122,32 @@ export default function DataGridClient() {
       cell: info => <span className="text-slate-400 text-[10px]">{info.getValue() ? new Date(info.getValue()).toLocaleDateString() : '--'}</span>,
     },
     {
-      accessorKey: 'referenciaCatastral',
+      accessorKey: 'cadastralReference',
       header: 'Catastro',
       cell: info => <span className="font-mono text-slate-300">{info.getValue() || '--'}</span>,
     },
     {
-      accessorKey: 'fincasRegistrales',
+      accessorKey: 'registryCode',
       header: 'Fincas',
       cell: info => <span className="text-slate-400 font-mono text-[11px] truncate max-w-[120px] block" title={info.getValue()}>{info.getValue() || '--'}</span>,
     },
     {
-      accessorKey: 'tipoActivo',
+      accessorKey: 'assetType',
       header: 'Tipo',
       cell: info => <span className="text-slate-300">{info.getValue() || '--'}</span>,
     },
     {
-      accessorKey: 'usoUrbanistico',
+      accessorKey: 'usage',
       header: 'Uso',
       cell: info => <span className="text-slate-400 text-xs">{info.getValue() || '--'}</span>,
     },
     {
-      accessorKey: 'direccion',
+      accessorKey: 'address',
       header: 'Dirección',
       cell: info => <span className="text-slate-400 truncate max-w-[180px] block" title={info.getValue()}>{info.getValue() || '--'}</span>,
     },
     {
-      accessorKey: 'municipio',
+      accessorKey: 'municipality',
       header: 'Municipio',
       cell: info => <span className="text-slate-300">{info.getValue() || '--'}</span>,
     },
@@ -274,7 +277,8 @@ export default function DataGridClient() {
                     onClick={() => handleRowClick(row.original)}
                     className="hover:bg-slate-800/50 transition-colors cursor-pointer group"
                   >
-                    {row.getVisibleCells().map(cell => (
+                    
+                    {(typeof row.getVisibleCells === 'function' ? row.getVisibleCells() : (typeof row.getAllCells === 'function' ? row.getAllCells() : row.cells || [])).map(cell => (
                       <td key={cell.id} className="px-6 py-4 group-hover:text-white transition-colors">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>

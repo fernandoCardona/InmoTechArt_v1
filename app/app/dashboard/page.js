@@ -1,4 +1,5 @@
 import DataGridClient from './DataGridClient';
+import { Suspense } from 'react';
 
 export const metadata = {
   title: 'Vista General de Activos | Neretxaus',
@@ -15,7 +16,9 @@ export default function DashboardPage() {
       </header>
 
       {/* Inyectamos la tabla React Table en Client Component */}
-      <DataGridClient />
+      <Suspense fallback={<div className="text-slate-500 py-12 text-center animate-pulse">Cargando portfolio...</div>}>
+        <DataGridClient />
+      </Suspense>
       
     </div>
   );

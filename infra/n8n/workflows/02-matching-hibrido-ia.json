@@ -12,53 +12,197 @@
           ]
         }
       },
-      "id": "e81d7d06-c89b-44ec-b4c4-72213490aa5e",
+      "id": "node-cron",
       "name": "Cron (Cada 6h) o Webhook",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
-      "position": [ 100, 300 ]
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Disparador\n**Función:**\nArranca el proceso automáticamente.\n\n**Configuración:**\nPuedes forzarlo manualmente con Execute.",
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-1",
+      "name": "Nota 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        50
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT * FROM app_core.client_search_profiles c JOIN app_core.clients cl ON c.client_id = cl.id WHERE cl.is_active = true;"
+        "query": "=SELECT c.id as client_id, c.first_name, s.search_prompt, s.budget_max, s.preferred_areas \nFROM app_core.clients c \nJOIN app_core.client_search_profiles s ON c.id = s.client_id \nWHERE c.is_active = true;"
       },
-      "id": "2db4c6a9-8df0-4b36-9b51-518db671a5af",
+      "id": "node-get-clients",
       "name": "Obtener Clientes y Perfiles",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.1,
-      "position": [ 300, 300 ]
+      "position": [
+        200,
+        300
+      ]
     },
     {
-      "parameters": {},
-      "id": "c61b2a95-ef20-4e3a-ae9a-5e8c454e99f9",
-      "name": "Loop (Por cada Cliente)",
-      "type": "n8n-nodes-base.loop",
+      "parameters": {
+        "content": "### 2. Extractor Clientes\n**Función:**\nSaca de la base de datos a los clientes activos.\n\n⚠️ **CRÍTICO:** Selecciona tu credencial de Postgres.",
+        "color": 6,
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-2",
+      "name": "Nota 2",
+      "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [ 500, 300 ]
+      "position": [
+        200,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "node-loop",
+      "name": "Loop (Por cada Cliente)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3. Bucle Clientes\n**Función:**\nItera cliente por cliente para no mezclar las búsquedas.",
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-3",
+      "name": "Nota 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        400,
+        50
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=SELECT * FROM assets.properties \nWHERE is_active = true \nAND precio_venta <= {{ $json.presupuesto_maximo || 999999999 }}\nAND (provincia = '{{ $json.provincia }}' OR '{{ $json.provincia }}' = 'null' OR '{{ $json.provincia }}' = '')\nAND created_at >= NOW() - INTERVAL '7 DAYS'\nLIMIT 50;"
+        "query": "=SELECT id as property_id, tipo_activo, precio_venta, direccion, provincia \nFROM assets.properties \nWHERE precio_venta <= {{ $json.budget_max }} \nORDER BY created_at DESC LIMIT 5;"
       },
-      "id": "d0fbc765-b1ab-4318-8f5b-b9f1dcf752c0",
+      "id": "node-pre-filter",
       "name": "Pre-Filtro SQL Rápido",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.1,
-      "position": [ 700, 300 ]
+      "position": [
+        600,
+        300
+      ]
     },
     {
       "parameters": {
-        "model": "qwen2.5:7b-instruct",
-        "prompt": "=Eres un experto inmobiliario. Cruza el perfil del cliente: \"{{ $('Loop (Por cada Cliente)').item.json.descripcion_ia }}\" con este activo: {{ JSON.stringify($json) }}. Devuelve un JSON con 'match_score' (0-100) y 'match_reason' (texto explicativo corto).",
-        "jsonOutput": true
+        "content": "### 4. Filtro SQL Lógico\n**Función:**\nFiltra propiedades por precio máximo.\n\n⚠️ **CRÍTICO:** Selecciona tu credencial de Postgres.",
+        "color": 6,
+        "height": 220,
+        "width": 180
       },
-      "id": "893c5d88-ec94-4d1a-be87-512c1e48e898",
-      "name": "Ollama (Evaluación IA)",
-      "type": "n8n-nodes-base.ollama",
+      "id": "sticky-4",
+      "name": "Nota 4",
+      "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [ 900, 300 ]
+      "position": [
+        600,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "qwen2.5:7b-instruct"
+            },
+            {
+              "name": "prompt",
+              "value": "=Evalúa si esta propiedad ({{ $json.tipo_activo }} en {{ $json.provincia }} por {{ $json.precio_venta }}€) es un buen match para un cliente que busca: \"{{ $(\"Loop (Por cada Cliente)\").item.json.search_prompt }}\".\n\nDevuelve un JSON con el siguiente formato:\n{\n  \"match_score\": número entero del 0 al 100,\n  \"reason\": \"Breve frase de 15 palabras explicando por qué encaja o por qué no\"\n}"
+            },
+            {
+              "name": "stream",
+              "value": "false"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-ollama",
+      "name": "Ollama API (Evaluación IA)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 5. Evaluador IA Local\n**Función:**\nCruza Perfil con Propiedad (Score).\n\n**Config:**\nInterno, sin credencial.",
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-5",
+      "name": "Nota 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        800,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  let raw = $input.item.json.response;\n  raw = raw.replace(/```json\\n/g, '').replace(/```/g, '').trim();\n  const parsedData = JSON.parse(raw);\n  return { json: parsedData };\n} catch (error) {\n  return { json: { match_score: 0, reason: 'Error de IA' } };\n}"
+      },
+      "id": "node-sanitize",
+      "name": "Sanitizar IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 6. Sanitizador JSON\n**Función:**\nLimpia fallos Markdown de la IA. Fallback al 0%.",
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-6",
+      "name": "Nota 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        50
+      ]
     },
     {
       "parameters": {
@@ -66,68 +210,155 @@
           "number": [
             {
               "value1": "={{ $json.match_score }}",
-              "operation": "largest",
+              "operation": "largerEqual",
               "value2": 70
             }
           ]
         }
       },
-      "id": "c35d69eb-6f4a-4d2c-8822-482bcbd9a3df",
+      "id": "node-if",
       "name": "Filtro (> 70% Match)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [ 1100, 300 ]
+      "position": [
+        1200,
+        300
+      ]
     },
     {
       "parameters": {
-        "operation": "insert",
-        "schema": "app_core",
-        "table": "asset_matches",
-        "columns": "client_id,property_id,match_score,match_reason",
-        "returnFields": false
+        "content": "### 7. IF Lógico\n**Función:**\nDescarta por debajo del 70%.",
+        "height": 220,
+        "width": 180
       },
-      "id": "a92d4f23-8c10-4f53-8328-984b91f0e4b8",
+      "id": "sticky-7",
+      "name": "Nota 7",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO app_core.asset_matches (client_id, property_id, ai_score, match_reason, status) \nVALUES ('{{ $(\"Loop (Por cada Cliente)\").item.json.client_id }}', '{{ $(\"Pre-Filtro SQL Rápido\").item.json.property_id }}', {{ $json.match_score }}, '{{ $json.reason }}', 'PENDING') \nON CONFLICT (client_id, property_id) DO UPDATE SET ai_score = EXCLUDED.ai_score, match_reason = EXCLUDED.match_reason;"
+      },
+      "id": "node-save",
       "name": "Guardar Matches (PostgreSQL)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.1,
-      "position": [ 1300, 200 ]
+      "position": [
+        1400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 8. Guardar Match\n**Función:**\nGuarda en DB para la UI.\n\n⚠️ **CRÍTICO:** Selecciona tu credencial de Postgres.",
+        "color": 6,
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-8",
+      "name": "Nota 8",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        50
+      ]
     }
   ],
   "connections": {
     "Cron (Cada 6h) o Webhook": {
       "main": [
-        [ { "node": "Obtener Clientes y Perfiles", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Obtener Clientes y Perfiles",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Obtener Clientes y Perfiles": {
       "main": [
-        [ { "node": "Loop (Por cada Cliente)", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Loop (Por cada Cliente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Loop (Por cada Cliente)": {
       "main": [
-        [ { "node": "Pre-Filtro SQL Rápido", "type": "main", "index": 0 } ]
+        [],
+        [
+          {
+            "node": "Pre-Filtro SQL Rápido",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Pre-Filtro SQL Rápido": {
       "main": [
-        [ { "node": "Ollama (Evaluación IA)", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Ollama API (Evaluación IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Ollama (Evaluación IA)": {
+    "Ollama API (Evaluación IA)": {
       "main": [
-        [ { "node": "Filtro (> 70% Match)", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Sanitizar IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanitizar IA": {
+      "main": [
+        [
+          {
+            "node": "Filtro (> 70% Match)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Filtro (> 70% Match)": {
       "main": [
-        [ { "node": "Guardar Matches (PostgreSQL)", "type": "main", "index": 0 } ],
-        [ { "node": "Loop (Por cada Cliente)", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Guardar Matches (PostgreSQL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Guardar Matches (PostgreSQL)": {
       "main": [
-        [ { "node": "Loop (Por cada Cliente)", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Loop (Por cada Cliente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },

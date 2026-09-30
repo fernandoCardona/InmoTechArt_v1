@@ -2,6 +2,7 @@ import ProvidersClient from './ProvidersClient';
 import { cookies } from 'next/headers';
 import { decrypt } from '../../../lib/auth';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
 export const metadata = {
   title: 'Proveedores | Neretxaus',
@@ -21,5 +22,9 @@ export default async function ProvidersPage() {
     redirect('/dashboard');
   }
 
-  return <ProvidersClient />;
+  return (
+    <Suspense fallback={<div className="py-12 text-center text-slate-500">Cargando interfaz...</div>}>
+      <ProvidersClient />
+    </Suspense>
+  );
 }

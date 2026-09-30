@@ -16,8 +16,99 @@ export const users = appCore.table('users', {
   locale: varchar('locale', { length: 5 }).notNull().default('es'),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 });
+
+
+export const searchHistory = appCore.table('search_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  searchQuery: varchar('search_query', { length: 500 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const providers = assetsSchema.table('providers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 150 }).unique().notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const assetMatches = appCore.table('asset_matches', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  propertyId: uuid('property_id').references(() => properties.id).notNull(),
+  clientName: varchar('client_name', { length: 150 }).notNull(),
+  matchScore: numeric('match_score', { precision: 5, scale: 2 }),
+  status: varchar('status', { length: 50 }).notNull().default('NEW'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+// ============================================================
+// ASSETS SCHEMA
+// ============================================================
+
+export const properties = assetsSchema.table('properties', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  providerId: uuid('provider_id').references(() => providers.id).notNull(), 
+  
+  assetCodeProvider: varchar('asset_code_provider', { length: 100 }),
+  cadastralReference: varchar('cadastral_reference', { length: 20 }),
+  registryCode: varchar('registry_code', { length: 100 }),
+  
+  assetCategory: varchar('asset_category', { length: 50 }).notNull().default('REO'),
+  assetType: varchar('asset_type', { length: 100 }).notNull(),
+  usage: varchar('usage', { length: 100 }),
+  
+  autonomousCommunity: varchar('autonomous_community', { length: 100 }),
+  province: varchar('province', { length: 100 }).notNull(),
+  municipality: varchar('municipality', { length: 100 }).notNull(),
+  postalCode: varchar('postal_code', { length: 10 }).notNull(),
+  address: text('address').notNull(),
+  floorDoor: varchar('floor_door', { length: 50 }),
+  
+  pricePvp: numeric('price_pvp', { precision: 14, scale: 2 }).notNull(),
+  priceSubjectApproval: boolean('price_subject_approval').notNull().default(false),
+  commercialChannel: varchar('commercial_channel', { length: 100 }),
+  
+  occupancyStatus: varchar('occupancy_status', { length: 50 }).notNull().default('DESCONOCIDO'),
+  legalPhaseSae: text('legal_phase_sae'),
+  
+  landAreaM2: numeric('land_area_m2', { precision: 12, scale: 2 }),
+  buildabilityAboveGroundM2: numeric('buildability_above_ground_m2', { precision: 12, scale: 2 }),
+  buildabilityBelowGroundM2: numeric('buildability_below_ground_m2', { precision: 12, scale: 2 }),
+  
+  unitsCount: integer('units_count').notNull().default(1),
+  unitsProtected: integer('units_protected').notNull().default(0),
+  detailedBuildability: jsonb('detailed_buildability').notNull().default({}),
+  
+  isActive: boolean('is_active').notNull().default(true),
+  lastSeenInBatchId: uuid('last_seen_in_batch_id'),
+  rawMetadata: jsonb('raw_metadata').notNull().default({}),
+  
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const importBatches = assetsSchema.table('import_batches', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  providerId: uuid('provider_id').references(() => providers.id).notNull(),
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull().default('PROCESSING'),
+  recordsReceived: integer('records_received').notNull().default(0),
+  recordsInserted: integer('records_inserted').notNull().default(0),
+  recordsUpdated: integer('records_updated').notNull().default(0),
+  recordsFailed: integer('records_failed').notNull().default(0),
+  errorLog: text('error_log'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp('finished_at', { withTimezone: true })
+});
+
+
+// ============================================================
+// SECURITY & AUDIT SCHEMA (app_core)
+// ============================================================
 
 export const authorizedDevices = appCore.table('authorized_devices', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -28,7 +119,24 @@ export const authorizedDevices = appCore.table('authorized_devices', {
   approvedBy: uuid('approved_by').references(() => users.id),
   approvedAt: timestamp('approved_at', { withTimezone: true }),
   lastUsedIp: varchar('last_used_ip', { length: 45 }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+});
+
+export const accessAuditLogs = appCore.table('access_audit_logs', {
+  // Instead of bigserial, we can use integer or bigint in drizzle if we must, 
+  // but just defining it as a table should be fine. Drizzle usually maps bigserial to bigint.
+  // Actually, Drizzle allows bigserial('id') but let's just use bigserial if possible, 
+  // or define it exactly. But since we are not migrating (pushing), just referencing it is fine.
+  id: integer('id').primaryKey(),
+  userId: uuid('user_id').references(() => users.id),
+  ipAddress: varchar('ip_address', { length: 45 }).notNull(),
+  deviceFingerprint: varchar('device_fingerprint', { length: 256 }),
+  action: varchar('action', { length: 100 }).notNull(),
+  endpoint: varchar('endpoint', { length: 512 }),
+  httpMethod: varchar('http_method', { length: 10 }),
+  wasSuccessful: boolean('was_successful').notNull(),
+  failureReason: varchar('failure_reason', { length: 512 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
 export const userSessions = appCore.table('user_sessions', {
@@ -41,108 +149,11 @@ export const userSessions = appCore.table('user_sessions', {
   isActive: boolean('is_active').notNull().default(true),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  lastActivity: timestamp('last_activity', { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const accessAuditLogs = appCore.table('access_audit_logs', {
-  id: integer('id').primaryKey(),
-  userId: uuid('user_id').references(() => users.id),
-  ipAddress: varchar('ip_address', { length: 45 }).notNull(),
-  deviceFingerprint: varchar('device_fingerprint', { length: 256 }),
-  action: varchar('action', { length: 100 }).notNull(),
-  endpoint: varchar('endpoint', { length: 512 }),
-  httpMethod: varchar('http_method', { length: 10 }),
-  wasSuccessful: boolean('was_successful').notNull(),
-  failureReason: varchar('failure_reason', { length: 512 }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastActivity: timestamp('last_activity', { withTimezone: true }).notNull().defaultNow()
 });
 
 // ============================================================
-// ASSETS SCHEMA
-// ============================================================
-
-export const searchHistory = appCore.table('search_history', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
-  searchQuery: varchar('search_query', { length: 500 }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const providers = assetsSchema.table('providers', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: varchar('name', { length: 150 }).unique().notNull(),
-  code: varchar('code', { length: 50 }).unique().notNull(),
-  contactEmail: varchar('contact_email', { length: 255 }),
-  notes: text('notes'),
-  isActive: boolean('is_active').notNull().default(true),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const importBatches = assetsSchema.table('import_batches', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  providerId: uuid('provider_id').references(() => providers.id).notNull(),
-  fileName: varchar('file_name', { length: 512 }).notNull(),
-  fileHash: varchar('file_hash', { length: 128 }),
-  recordsReceived: integer('records_received').notNull().default(0),
-  recordsInserted: integer('records_inserted').notNull().default(0),
-  recordsUpdated: integer('records_updated').notNull().default(0),
-  recordsPurged: integer('records_purged').notNull().default(0),
-  recordsFailed: integer('records_failed').notNull().default(0),
-  status: varchar('status', { length: 50 }).notNull().default('PROCESSING'),
-  errorLog: text('error_log'),
-  executedBy: uuid('executed_by').references(() => users.id),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  finishedAt: timestamp('finished_at', { withTimezone: true }),
-});
-
-export const properties = assetsSchema.table('properties', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  providerId: uuid('provider_id').references(() => providers.id).notNull(), // Equivalente a 'proveedor' relacional
-  
-  // Identificadores
-  referenciaProveedor: varchar('referencia_proveedor', { length: 100 }),
-  referenciaCatastral: varchar('referencia_catastral', { length: 50 }),
-  fincasRegistrales: varchar('fincas_registrales', { length: 100 }),
-  
-  // Ubicación y Geografía
-  ccaa: varchar('ccaa', { length: 100 }),
-  provincia: varchar('provincia', { length: 100 }).notNull(),
-  municipio: varchar('municipio', { length: 150 }).notNull(),
-  direccion: varchar('direccion', { length: 255 }),
-  codigoPostal: varchar('codigo_postal', { length: 10 }),
-  
-  // Clasificación y Tipología
-  tipoActivo: varchar('tipo_activo', { length: 100 }),
-  subtipoTipologia: varchar('subtipo_tipologia', { length: 100 }),
-  usoUrbanistico: varchar('uso_urbanistico', { length: 100 }),
-  clasificacionSuelo: varchar('clasificacion_suelo', { length: 100 }),
-  
-  // Economía y Comercialización
-  precioVenta: numeric('precio_venta', { precision: 12, scale: 2 }).notNull().default('0'),
-  porcentajeParticipacion: varchar('porcentaje_participacion', { length: 50 }),
-  modalidadComercial: varchar('modalidad_comercial', { length: 100 }),
-  
-  // Estado Legal / Posesorio
-  faseJudicialOcupacion: varchar('fase_judicial_ocupacion', { length: 150 }),
-  
-  // Datos técnicos de Suelos y Obras
-  superficieSueloM2: numeric('superficie_suelo_m2', { precision: 12, scale: 2 }),
-  edificabilidadSobreRasanteM2: numeric('edificabilidad_sobre_rasante_m2', { precision: 12, scale: 2 }),
-  edificabilidadBajoRasanteM2: numeric('edificabilidad_bajo_rasante_m2', { precision: 12, scale: 2 }),
-  numViviendas: integer('num_viviendas'),
-  
-  // Metadata del sistema
-  isActive: boolean('is_active').notNull().default(true),
-  lastSeenInBatchId: uuid('last_seen_in_batch_id').references(() => importBatches.id),
-  rawMetadata: jsonb('raw_metadata').notNull().default({}),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
-
-
-// ============================================================
-// CRM & MATCHING SCHEMA
+// CLIENTS SCHEMA (app_core)
 // ============================================================
 
 export const clients = appCore.table('clients', {
@@ -154,26 +165,15 @@ export const clients = appCore.table('clients', {
   phone: varchar('phone', { length: 50 }),
   notes: text('notes'),
   isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow()
 });
 
 export const clientSearchProfiles = appCore.table('client_search_profiles', {
   id: uuid('id').defaultRandom().primaryKey(),
   clientId: uuid('client_id').references(() => clients.id).notNull(),
-  provincia: varchar('provincia', { length: 100 }), 
+  provincia: varchar('provincia', { length: 100 }),
   tipoActivo: varchar('tipo_activo', { length: 100 }),
   presupuestoMaximo: numeric('presupuesto_maximo', { precision: 12, scale: 2 }),
-  descripcionIA: text('descripcion_ia'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-});
-
-export const assetMatches = appCore.table('asset_matches', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  clientId: uuid('client_id').references(() => clients.id).notNull(),
-  propertyId: uuid('property_id').references(() => properties.id).notNull(),
-  matchScore: integer('match_score'), 
-  matchReason: text('match_reason'),
-  status: varchar('status', { length: 50 }).default('SUGGESTED'),
-  isNew: boolean('is_new').default(true),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  descripcionIa: text('descripcion_ia'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow()
 });

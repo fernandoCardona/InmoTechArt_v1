@@ -9,19 +9,29 @@ export async function GET(req) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '50', 10);
     const search = searchParams.get('search') || '';
+    const providerId = searchParams.get('providerId');
     
     const offset = (page - 1) * limit;
 
     // Construcción dinámica de filtros
-    let filters = undefined;
+    let searchFilter = undefined;
     if (search) {
       const searchTerm = `%${search}%`;
-      filters = or(
-        ilike(properties.referenciaCatastral, searchTerm),
-        ilike(properties.referenciaProveedor, searchTerm),
-        ilike(properties.municipio, searchTerm),
-        ilike(properties.direccion, searchTerm)
+      searchFilter = or(
+        ilike(properties.cadastralReference, searchTerm),
+        ilike(properties.assetCodeProvider, searchTerm),
+        ilike(properties.municipality, searchTerm),
+        ilike(properties.address, searchTerm)
       );
+    }
+    
+    let filters = undefined;
+    if (searchFilter && providerId) {
+      filters = and(searchFilter, eq(properties.providerId, providerId));
+    } else if (searchFilter) {
+      filters = searchFilter;
+    } else if (providerId) {
+      filters = eq(properties.providerId, providerId);
     }
 
     // Consulta de datos con JOIN a providers
@@ -59,6 +69,25 @@ export async function GET(req) {
     });
   } catch (error) {
     console.error('Error fetching properties:', error);
-    return NextResponse.json({ error: 'Fallo al obtener activos' }, { status: 500 });
+    return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
+  }
+}
+
+
+export async function DELETE(req) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const providerId = searchParams.get('providerId');
+
+    if (!providerId) {
+      return NextResponse.json({ error: 'Falta providerId' }, { status: 400 });
+    }
+
+    const result = await db.delete(properties).where(eq(properties.providerId, providerId)).returning();
+
+    return NextResponse.json({ success: true, deletedCount: result.length });
+  } catch (error) {
+    console.error('Error al borrar activos del proveedor:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

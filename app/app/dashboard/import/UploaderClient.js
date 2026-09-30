@@ -6,7 +6,9 @@ import { LuCheck, LuPencil, LuTriangleAlert } from 'react-icons/lu';
 export default function UploaderClient() {
   const [file, setFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [providerId, setProviderId] = useState(''); 
+  const [providerId, setProviderId] = useState('');
+  const [newProviderName, setNewProviderName] = useState('');
+  const [isNewProvider, setIsNewProvider] = useState(false); 
   const [providers, setProviders] = useState([]);
   const [status, setStatus] = useState('IDLE'); // IDLE, UPLOADING, PROCESSING, COMPLETED, ERROR
   const [progress, setProgress] = useState({ inserted: 0, updated: 0, failed: 0, total: 0 });
@@ -36,11 +38,16 @@ export default function UploaderClient() {
     init();
   }, []);
 
-  // Limpiar EventSource al desmontar
+  // Limpiar EventSource/Intervalo al desmontar
   useEffect(() => {
     return () => {
       if (eventSourceRef.current) {
-        eventSourceRef.current.close();
+        // En la versión antigua era un SSE, ahora es un setInterval
+        if (typeof eventSourceRef.current.close === 'function') {
+          eventSourceRef.current.close();
+        } else {
+          clearInterval(eventSourceRef.current);
+        }
       }
     };
   }, []);
@@ -70,14 +77,18 @@ export default function UploaderClient() {
   };
 
   const startUpload = async () => {
-    if (!file || !providerId) return;
+    if (!file || (!providerId && !newProviderName)) return;
     setStatus('UPLOADING');
     setActiveTab(null);
     setDetails({ inserted: [], updated: [], failed: [], all: [] });
     
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('providerId', providerId);
+    if (isNewProvider) {
+      formData.append('providerName', newProviderName);
+    } else {
+      formData.append('providerId', providerId);
+    }
 
     try {
       const res = await fetch('/api/import', {
@@ -91,7 +102,7 @@ export default function UploaderClient() {
       
       setBatchId(data.batchId);
       setStatus('PROCESSING');
-      setProgress({ inserted: 0, updated: 0, failed: 0, total: data.totalRows || 100 });
+      setProgress({ inserted: 0, updated: 0, failed: 0, total: data.totalRows || 100, processed: 0 });
       
       // Iniciar escucha SSE
       startSSE(data.batchId);
@@ -103,39 +114,35 @@ export default function UploaderClient() {
   };
 
   const startSSE = (id) => {
-    // Si ya había uno, lo cerramos
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
-
-    const sse = new EventSource(`/api/import/progress?batchId=${id}`);
-    eventSourceRef.current = sse;
-
-    sse.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'PROGRESS') {
-        setProgress(prev => ({ ...prev, ...data.payload }));
-      } else if (data.type === 'COMPLETED') {
-        setStatus('COMPLETED');
-        if (data.payload.insertedList) {
-          setDetails({
-            inserted: data.payload.insertedList,
-            updated: data.payload.updatedList,
-            failed: data.payload.failedList,
-            all: data.payload.allList
+    // In new architecture with n8n, we poll the database instead of SSE
+    if (eventSourceRef.current) clearInterval(eventSourceRef.current);
+    
+    // Simulate fake progress until n8n updates DB
+    let currentFake = 0;
+    
+    eventSourceRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/import/status?batchId=${id}`);
+        const json = await res.json();
+        
+        if (!json.error) {
+          setProgress({ 
+            inserted: json.inserted || 0, 
+            updated: json.updated || 0, 
+            failed: json.failed || 0, 
+            total: json.total || 1, 
+            processed: (json.inserted || 0) + (json.updated || 0) + (json.failed || 0)
           });
+          setStatus(json.status);
+          
+          if (json.status === 'COMPLETED' || json.status === 'FAILED') {
+            clearInterval(eventSourceRef.current);
+          }
         }
-        sse.close();
-      } else if (data.type === 'ERROR') {
-        setStatus('ERROR');
-        sse.close();
+      } catch (err) {
+        console.error(err);
       }
-    };
-
-    sse.onerror = () => {
-      console.error('SSE Error connection lost');
-      sse.close();
-    };
+    }, 2000);
   };
 
   // Cálculo de progreso visual
@@ -223,7 +230,7 @@ export default function UploaderClient() {
               className={`p-3 bg-slate-800/50 rounded-lg transition-all ${status === 'COMPLETED' ? 'cursor-pointer hover:bg-slate-700/50' : ''} ${activeTab === 'all' ? 'ring-2 ring-slate-400' : ''}`}
             >
               <p className="text-slate-400 text-xs uppercase">Analizados</p>
-              <p className="text-xl text-white font-dm-sans">{progress.total}</p>
+              <p className="text-xl text-white font-dm-sans">{progress.processed || 0} <span className="text-sm text-slate-500">/ {progress.total}</span></p>
             </div>
             <div 
               onClick={() => status === 'COMPLETED' && setActiveTab('inserted')}

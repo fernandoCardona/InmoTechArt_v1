@@ -7,80 +7,253 @@
         "path": "send-match",
         "options": {}
       },
-      "id": "e0d0f5c0-1c0b-46a4-9df7-7170e5b15852",
+      "id": "node-wh-mailer",
       "name": "Webhook (Recibe Trigger)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [ 200, 300 ],
+      "position": [
+        0,
+        300
+      ],
       "webhookId": "send-match-webhook-id"
+    },
+    {
+      "parameters": {
+        "content": "### 1. Webhook de Email\n**Función:**\nSe activa cuando le das a 'Recomendar' en Next.js.",
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-wf3-1",
+      "name": "Nota 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        50
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
         "query": "=SELECT c.first_name, c.email, p.referencia_catastral, p.provincia, p.precio_venta, p.tipo_activo, m.match_reason \nFROM app_core.asset_matches m\nJOIN app_core.clients c ON m.client_id = c.id\nJOIN assets.properties p ON m.property_id = p.id\nWHERE m.id = '{{ $json.body.matchId }}';"
       },
-      "id": "2db4c6a9-8df0-4b36-9b51-518db671a5aa",
+      "id": "node-get-data-mailer",
       "name": "Obtener Datos Combinados (DB)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.1,
-      "position": [ 400, 300 ]
+      "position": [
+        200,
+        300
+      ]
     },
     {
       "parameters": {
-        "model": "qwen2.5:7b-instruct",
-        "prompt": "=Eres un asesor comercial inmobiliario premium. Redacta un correo corto, elegante y muy persuasivo dirigido a {{ $json.first_name }}, presentándole esta propiedad ({{ $json.tipo_activo }} en {{ $json.provincia }} por {{ $json.precio_venta }}€). \n\nUtiliza esta razón sugerida por la IA: \"{{ $json.match_reason }}\". \n\nDevuelve solo el cuerpo del correo en HTML, estructurado para enviar por email.",
-        "jsonOutput": false
+        "content": "### 2. Extractor de Datos\n**Función:**\nCoge nombre, precio, email y la excusa de la IA.\n\n⚠️ **CRÍTICO:** Selecciona tu credencial de Postgres.",
+        "color": 6,
+        "height": 220,
+        "width": 180
       },
-      "id": "893c5d88-ec94-4d1a-be87-512c1e48e899",
-      "name": "Ollama (Generar Email HTML)",
-      "type": "n8n-nodes-base.ollama",
+      "id": "sticky-wf3-2",
+      "name": "Nota 2",
+      "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [ 600, 300 ]
+      "position": [
+        200,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "qwen2.5:7b-instruct"
+            },
+            {
+              "name": "prompt",
+              "value": "=Eres un asesor comercial inmobiliario premium. Redacta un correo corto, elegante y muy persuasivo dirigido a {{ $json.first_name }}, presentándole esta propiedad ({{ $json.tipo_activo }} en {{ $json.provincia }} por {{ $json.precio_venta }}€). \n\nUtiliza esta razón sugerida por la IA: \"{{ $json.match_reason }}\". \n\nDevuelve solo el cuerpo del correo en HTML, estructurado para enviar por email."
+            },
+            {
+              "name": "stream",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-ollama-mailer",
+      "name": "Ollama API (Generar Email HTML)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3. Redactor Comercial IA\n**Función:**\nRedacta el HTML perfecto basándose en el motivo del Match.\n\n**Config:** Interno, sin credencial.",
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-wf3-3",
+      "name": "Nota 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        400,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  let raw = $input.item.json.response;\n  return { json: { html: raw } };\n} catch (error) {\n  return { json: { html: '<p>Tenemos una nueva propiedad para ti.</p>' } };\n}"
+      },
+      "id": "code-parser-node-mailer",
+      "name": "Extraer HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 4. Limpiador HTML\n**Función:**\nAsegura que el HTML salga limpio hacia el Email.",
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-wf3-4",
+      "name": "Nota 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        600,
+        50
+      ]
     },
     {
       "parameters": {
         "fromEmail": "asesor@neretxaus.com",
         "toEmail": "={{ $('Obtener Datos Combinados (DB)').item.json.email }}",
         "subject": "=Sugerencia Inmobiliaria Premium para ti, {{ $('Obtener Datos Combinados (DB)').item.json.first_name }}",
-        "html": "={{ $json.response }}"
+        "html": "={{ $json.html }}"
       },
-      "id": "9ca15b88-15a0-4f81-a67b-12d45c1157f2",
+      "id": "node-send-email",
       "name": "Enviar Correo (SMTP)",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
-      "position": [ 800, 300 ]
+      "position": [
+        800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 5. Motor SMTP\n**Función:**\nEnvía físicamente el correo al cliente.\n\n⚠️ **CRÍTICO:** Selecciona tu credencial SMTP de Gmail.",
+        "color": 6,
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-wf3-5",
+      "name": "Nota 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        800,
+        50
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
         "query": "=UPDATE app_core.asset_matches SET status = 'SENT' WHERE id = '{{ $('Webhook (Recibe Trigger)').item.json.body.matchId }}';"
       },
-      "id": "2db4c6a9-8df0-4b36-9b51-518db671a5ab",
+      "id": "node-mark-sent",
       "name": "Marcar como Enviado (DB)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.1,
-      "position": [ 1000, 300 ]
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 6. Actualizar Estado\n**Función:**\nCierra el ciclo marcándolo como SENT.\n\n⚠️ **CRÍTICO:** Selecciona tu credencial de Postgres.",
+        "color": 6,
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-wf3-6",
+      "name": "Nota 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        50
+      ]
     }
   ],
   "connections": {
     "Webhook (Recibe Trigger)": {
       "main": [
-        [ { "node": "Obtener Datos Combinados (DB)", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Obtener Datos Combinados (DB)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Obtener Datos Combinados (DB)": {
       "main": [
-        [ { "node": "Ollama (Generar Email HTML)", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Ollama API (Generar Email HTML)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Ollama (Generar Email HTML)": {
+    "Ollama API (Generar Email HTML)": {
       "main": [
-        [ { "node": "Enviar Correo (SMTP)", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Extraer HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer HTML": {
+      "main": [
+        [
+          {
+            "node": "Enviar Correo (SMTP)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Enviar Correo (SMTP)": {
       "main": [
-        [ { "node": "Marcar como Enviado (DB)", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Marcar como Enviado (DB)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },

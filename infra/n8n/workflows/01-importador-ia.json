@@ -7,79 +7,286 @@
         "path": "import",
         "options": {}
       },
-      "id": "e2d0f5c0-1c0b-46a4-9df7-7170e5b15852",
+      "id": "webhook-import-node",
       "name": "Webhook (Recibe Excel)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [ 250, 300 ],
-      "webhookId": "import-webhook-id"
+      "position": [
+        0,
+        300
+      ]
     },
     {
       "parameters": {
-        "fileSelector": "={{ $json.body.filePath }}"
+        "content": "### 1. Webhook de Entrada\n**Función:**\nEscucha peticiones POST multipart.\nRecibe `batchId`, `providerId` en texto y el archivo directamente en memoria (binario).",
+        "height": 220,
+        "width": 180
       },
-      "id": "8cf552a4-f6b0-4d51-8b2b-5bdf8e983cfb",
-      "name": "Leer Fichero",
-      "type": "n8n-nodes-base.readWriteFile",
+      "id": "sticky-1",
+      "name": "Nota Webhook",
+      "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [ 450, 300 ]
+      "position": [
+        0,
+        50
+      ]
     },
     {
       "parameters": {
         "options": {}
       },
-      "id": "1d8b6ec2-f155-46f4-a212-32a74c1064db",
+      "id": "parse-excel-node",
       "name": "Parsear CSV/Excel",
       "type": "n8n-nodes-base.spreadsheetFile",
       "typeVersion": 1,
-      "position": [ 650, 300 ]
+      "position": [
+        400,
+        300
+      ]
     },
     {
       "parameters": {
-        "model": "qwen2.5:7b-instruct",
-        "prompt": "Eres un experto inmobiliario. Analiza las cabeceras de este JSON y mapealas a nuestra BD (referencia_catastral, provincia, municipio, precio_venta).",
-        "jsonOutput": true
+        "content": "### 2. Parseador\n**Función:**\nConvierte el archivo binario en datos JSON (filas).",
+        "height": 220,
+        "width": 180
       },
-      "id": "f5a6b72a-6052-4cf0-8809-5b4d6b6a38cb",
-      "name": "Ollama (Mapeo IA)",
-      "type": "n8n-nodes-base.ollama",
+      "id": "sticky-3",
+      "name": "Nota Parsear",
+      "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [ 850, 300 ]
+      "position": [
+        400,
+        50
+      ]
     },
     {
       "parameters": {
-        "operation": "upsert",
-        "schema": "assets",
-        "table": "properties",
-        "columns": "referencia_catastral,provincia,municipio,precio_venta,provider_id,raw_metadata",
-        "upsertKey": "referencia_catastral"
+        "batchSize": 1,
+        "options": {}
       },
-      "id": "9ca15b88-15a0-4f81-a67b-12d45c1157f1",
-      "name": "Upsert PostgreSQL",
+      "id": "loop-node",
+      "name": "Loop (Fila a Fila)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3. Bucle Seguro\n**Función:**\nDosificador 1 a 1. Pasa las filas sin reventar la IA ni la DB.",
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-4",
+      "name": "Nota Loop",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        600,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "options": {},
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"qwen2.5:7b-instruct\",\n  \"prompt\": \"Eres un Data Engineer AI especializado en el sector inmobiliario español (Real Estate).\\nTu misión es transformar datos sucios (CSV/Excel) al esquema estricto de nuestra base de datos.\\n\\nREGLAS DE ORO:\\n1. NUNCA inventes datos. Si falta algo, devuelve null.\\n2. Extrae todos los metros cuadrados o números limpiando el texto.\\n3. Si detectas 'Finca Registral' o un código de activo de proveedor (ID), úsalo como 'asset_code_provider'.\\n4. Si detectas 'Referencia Catastral' (20 caracteres), ponlo en 'cadastral_reference'.\\n\\nESQUEMA JSON OBLIGATORIO:\\n{\\n  \\\"asset_code_provider\\\": \\\"ID, Código o Finca Registral del proveedor\\\",\\n  \\\"cadastral_reference\\\": \\\"Referencia Catastral oficial (20 chars) o null\\\",\\n  \\\"asset_category\\\": \\\"VALOR ESTRICTO (solo uno): REO, WIP, SUELO, TERCIARIO, RESIDENCIAL\\\",\\n  \\\"asset_type\\\": \\\"Residencial, Terciario, Industrial, Garaje, Trastero o null\\\",\\n  \\\"usage\\\": \\\"Oficina, Comercial, Residencial, etc o null\\\",\\n  \\\"autonomous_community\\\": \\\"CCAA (ej: Cataluña, Madrid) o null\\\",\\n  \\\"province\\\": \\\"Provincia o null\\\",\\n  \\\"municipality\\\": \\\"Municipio o null\\\",\\n  \\\"address\\\": \\\"Dirección completa o null\\\",\\n  \\\"postal_code\\\": \\\"CP (5 dígitos) o null\\\",\\n  \\\"land_area_m2\\\": Número decimal (Superficie Registral del Suelo) o null,\\n  \\\"buildability_above_ground_m2\\\": Número decimal (Edificabilidad sobre rasante) o null,\\n  \\\"buildability_below_ground_m2\\\": Número decimal (Edificabilidad bajo rasante) o null,\\n  \\\"units_count\\\": Entero (Nº Viviendas totales) o null,\\n  \\\"price_pvp\\\": Número decimal (Precio) o 0\\n}\\n\\nFILA CRUDA (RAW DATA):\\n\" + JSON.stringify($json) + \"\\n\\nRESPONDE ÚNICA Y EXCLUSIVAMENTE CON EL OBJETO JSON VÁLIDO. NO ESCRIBAS NINGUNA OTRA PALABRA:\",\n  \"stream\": false,\n  \"format\": \"json\"\n} }}"
+      },
+      "id": "ollama-http-node",
+      "name": "LLM Interno Docker (Ollama)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 4. Llamada IA Local\n**Función:**\nFuerza a Qwen2.5 a mapear el JSON al esquema maestro.",
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-5",
+      "name": "Nota Ollama",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        800,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  let raw = $input.item.json.response;\n  raw = raw.replace(/```json\\n/g, '').replace(/```/g, '').trim();\n  const parsedData = JSON.parse(raw);\n  return { json: parsedData };\n} catch (error) {\n  return { json: { referencia_proveedor: 'ERROR_' + Date.now(), tipo_activo: 'Desconocido', provincia: 'Desconocida', municipio: 'Desconocido', direccion: 'Error de parseo', precio_venta: 0 } };\n}"
+      },
+      "id": "code-parser-node",
+      "name": "Sanitizar y Parsear IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 5. Sanitizador JSON\n**Función:**\nCorta restos de Markdown (```json) típicos de la IA y parsea de forma segura.",
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-6",
+      "name": "Nota Sanitizar",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=WITH existing AS (\n  SELECT id FROM assets.properties \n  WHERE (asset_code_provider = '{{ $json.asset_code_provider || \"N/A\" }}' AND asset_code_provider IS NOT NULL AND asset_code_provider != 'N/A')\n  AND provider_id = '{{ $(\"Webhook (Recibe Excel)\").first().json.body.providerId }}' \n  LIMIT 1\n),\nupdated AS (\n  UPDATE assets.properties p\n  SET asset_type = COALESCE(NULLIF('{{ $json.asset_type || \"\" }}', ''), 'DESCONOCIDO'),\n      asset_category = (CASE WHEN UPPER('{{ $json.asset_category || \"\" }}') IN ('REO', 'WIP', 'SUELO', 'TERCIARIO', 'RESIDENCIAL') THEN UPPER('{{ $json.asset_category || \"\" }}')::assets.asset_cat_enum ELSE 'REO'::assets.asset_cat_enum END),\n      usage = '{{ $json.usage || \"\" }}',\n      autonomous_community = '{{ $json.autonomous_community || \"\" }}',\n      province = COALESCE(NULLIF('{{ $json.province || \"\" }}', ''), 'DESCONOCIDA'),\n      municipality = COALESCE(NULLIF('{{ $json.municipality || \"\" }}', ''), 'DESCONOCIDO'),\n      address = COALESCE(NULLIF('{{ $json.address || \"\" }}', ''), 'DIRECCION DESCONOCIDA'),\n      postal_code = COALESCE(NULLIF('{{ $json.postal_code || \"\" }}', ''), '00000'),\n      cadastral_reference = '{{ $json.cadastral_reference || \"\" }}',\n      land_area_m2 = {{ $json.land_area_m2 ? $json.land_area_m2 : 'NULL' }},\n      buildability_above_ground_m2 = {{ $json.buildability_above_ground_m2 ? $json.buildability_above_ground_m2 : 'NULL' }},\n      buildability_below_ground_m2 = {{ $json.buildability_below_ground_m2 ? $json.buildability_below_ground_m2 : 'NULL' }},\n      units_count = {{ $json.units_count ? $json.units_count : '1' }},\n      price_pvp = COALESCE(NULLIF(regexp_replace('{{ $json.price_pvp || 0 }}', '[^0-9.]', '', 'g'), ''), '0')::numeric,\n      raw_metadata = '{{ JSON.stringify($(\"Loop (Fila a Fila)\").item.json || {}).replace(/'/g, \"''\") }}'::jsonb,\n      updated_at = NOW()\n  FROM existing\n  WHERE p.id = existing.id\n  RETURNING p.id, 'UPDATE' as action_type\n),\ninserted AS (\n  INSERT INTO assets.properties (\n    provider_id, asset_code_provider, cadastral_reference, asset_category, asset_type, usage,\n    autonomous_community, province, municipality, postal_code, address,\n    land_area_m2, buildability_above_ground_m2, buildability_below_ground_m2, units_count,\n    price_pvp, raw_metadata\n  )\n  SELECT \n    '{{ $(\"Webhook (Recibe Excel)\").first().json.body.providerId }}', \n    '{{ $json.asset_code_provider || \"DESCONOCIDO\" }}', \n    NULLIF('{{ $json.cadastral_reference || \"\" }}', ''),\n    (CASE WHEN UPPER('{{ $json.asset_category || \"\" }}') IN ('REO', 'WIP', 'SUELO', 'TERCIARIO', 'RESIDENCIAL') THEN UPPER('{{ $json.asset_category || \"\" }}')::assets.asset_cat_enum ELSE 'REO'::assets.asset_cat_enum END),\n    COALESCE(NULLIF('{{ $json.asset_type || \"\" }}', ''), 'DESCONOCIDO'),\n    NULLIF('{{ $json.usage || \"\" }}', ''),\n    NULLIF('{{ $json.autonomous_community || \"\" }}', ''),\n    COALESCE(NULLIF('{{ $json.province || \"\" }}', ''), 'DESCONOCIDA'),\n    COALESCE(NULLIF('{{ $json.municipality || \"\" }}', ''), 'DESCONOCIDO'),\n    COALESCE(NULLIF('{{ $json.postal_code || \"\" }}', ''), '00000'),\n    COALESCE(NULLIF('{{ $json.address || \"\" }}', ''), 'DIRECCION DESCONOCIDA'),\n    {{ $json.land_area_m2 ? $json.land_area_m2 : 'NULL' }},\n    {{ $json.buildability_above_ground_m2 ? $json.buildability_above_ground_m2 : 'NULL' }},\n    {{ $json.buildability_below_ground_m2 ? $json.buildability_below_ground_m2 : 'NULL' }},\n    {{ $json.units_count ? $json.units_count : '1' }},\n    COALESCE(NULLIF(regexp_replace('{{ $json.price_pvp || 0 }}', '[^0-9.]', '', 'g'), ''), '0')::numeric,\n    '{{ JSON.stringify($(\"Loop (Fila a Fila)\").item.json || {}).replace(/'/g, \"''\") }}'::jsonb\n  WHERE NOT EXISTS (SELECT 1 FROM existing)\n  RETURNING id, 'INSERT' as action_type\n)\nSELECT * FROM updated UNION ALL SELECT * FROM inserted;"
+      },
+      "id": "postgres-upsert-node",
+      "name": "Postgres (Upsert Lógico)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.1,
-      "position": [ 1050, 300 ]
+      "position": [
+        1200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 6. Upsert Base de Datos\n**Función:**\nActualiza si existe, inserta si es nuevo. Devuelve `action_type` ('INSERT' o 'UPDATE').\n\n⚠️ **CRÍTICO:** Selecciona tu cuenta de Postgres.",
+        "color": 6,
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-7",
+      "name": "Nota Upsert",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE assets.import_batches \nSET \n  records_inserted = records_inserted + CASE WHEN '{{ $json.action_type }}' = 'INSERT' THEN 1 ELSE 0 END,\n  records_updated = records_updated + CASE WHEN '{{ $json.action_type }}' = 'UPDATE' THEN 1 ELSE 0 END,\n  status = CASE WHEN (records_inserted + records_updated + records_failed + 1) >= records_received THEN 'COMPLETED'::assets.batch_status ELSE 'PROCESSING'::assets.batch_status END\nWHERE id = '{{ $(\"Webhook (Recibe Excel)\").first().json.body.batchId }}';"
+      },
+      "id": "update-batch-node",
+      "name": "Actualizar Progreso (DB)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [
+        1400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 7. Gestor de Estado\n**Función:**\nSuma +1 a Nuevos o Actualizados según el nodo anterior.\n\n⚠️ **CRÍTICO:** Selecciona tu cuenta de Postgres.",
+        "color": 6,
+        "height": 220,
+        "width": 180
+      },
+      "id": "sticky-8",
+      "name": "Nota Update",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        50
+      ]
     }
   ],
   "connections": {
     "Webhook (Recibe Excel)": {
       "main": [
-        [ { "node": "Leer Fichero", "type": "main", "index": 0 } ]
-      ]
-    },
-    "Leer Fichero": {
-      "main": [
-        [ { "node": "Parsear CSV/Excel", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Parsear CSV/Excel",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Parsear CSV/Excel": {
       "main": [
-        [ { "node": "Ollama (Mapeo IA)", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Loop (Fila a Fila)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Ollama (Mapeo IA)": {
+    "Loop (Fila a Fila)": {
       "main": [
-        [ { "node": "Upsert PostgreSQL", "type": "main", "index": 0 } ]
+        [],
+        [
+          {
+            "node": "LLM Interno Docker (Ollama)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Interno Docker (Ollama)": {
+      "main": [
+        [
+          {
+            "node": "Sanitizar y Parsear IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanitizar y Parsear IA": {
+      "main": [
+        [
+          {
+            "node": "Postgres (Upsert Lógico)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres (Upsert Lógico)": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Progreso (DB)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar Progreso (DB)": {
+      "main": [
+        [
+          {
+            "node": "Loop (Fila a Fila)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
